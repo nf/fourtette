@@ -1,0 +1,99 @@
+( devices )
+
+|00 @System     [ &vector $2 &wst      $1 &rst    $1 &pad   $4 &r      $2 &g      $2 &b    $2 &debug  $1 &halt $1 ]
+|10 @Console    [ &vector $2 &read     $1 &pad    $5 &write $1 &error  $1 ]
+|20 @Screen     [ &vector $2 &width    $2 &height $2 &auto  $1 &pad    $1 &x      $2 &y    $2 &addr   $2 &pixel $1 &sprite $1 ]
+|30 @Audio0     [ &vector $2 &position $2 &output $1 &pad   $3 &adsr   $2 &length $2 &addr $2 &volume $1 &pitch $1 ]
+|80 @Controller [ &vector $2 &button   $1 &key    $1 ]
+|c0 @DateTime   [ &year   $2 &month    $1 &day    $1 &hour  $1 &minute $1 &second $1 &dotw $1 &doty   $2 &isdst $1 ]
+
+( variables )
+
+|0000
+
+( program )
+
+@piece
+	&type $1
+	&rot $1
+	&x $1 &y $1 ( offset from well top-left )
+@well
+	$64 ( 10x20 blocks, 1 nibble per block )
+	&end
+
+|0100 ( -> )
+
+	( theme ) 
+	#0fad .System/r DEO2 
+	#0dfa .System/g DEO2 
+	#0adf .System/b DEO2
+
+	( vectors )
+	( ;on-frame .Screen/vector DEO2 )
+	( ;on-button .Controller/vector DEO2 )
+
+	( resize )
+	#0100 .Screen/width DEO2
+	#0100 .Screen/height DEO2
+
+	.well &loop
+		DUP #01 AND #10 SFT
+		DUP #40 SFT #01 ORA ORA OVR STZ
+		INC DUP .well/end LTH ,&loop JCN
+		
+	draw-well
+BRK
+
+@on-frame ( -> )
+
+BRK
+
+@on-button ( -> )
+
+	.Controller/button DEI 
+	POP
+
+BRK
+
+@draw-well ( -- )
+	#0058 .Screen/x DEO2
+	#0038 .Screen/y DEO2
+	#01 .Screen/auto DEO
+	.well &loop
+		( load well byte )
+		LDZk DUP
+		( draw high nibble )
+		#04 SFT draw-block
+		( draw low nibble )
+		#0f AND draw-block
+
+		INC DUP .well/end LTH ,&loop JCN
+	POP
+JMP2r
+
+@draw-block ( well-nibble -- )
+	DUP ,&block JCN
+
+	( draw blank space )
+		;blank-chr .Screen/addr DEO2
+		.Screen/sprite DEO
+		,&inc JMP
+
+	&block ( draw block )
+		;block-icn .Screen/addr DEO2
+		#80 ORA .Screen/sprite DEO
+
+	&inc ( increment screen x/y )
+		.Screen/x DEI2 #00a8 LTH2 ,&no-eol JCN
+			#0058 .Screen/x DEO2
+			.Screen/y DEI2 #0008 ADD2 .Screen/y DEO2
+		&no-eol
+JMP2r
+
+( assets )
+
+@blank-chr
+	ffff ffff ffff ffff
+@block-icn
+	7e81 8181 8181 817f
+	007f 7f7f 7f7f 7f7f
