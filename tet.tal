@@ -164,7 +164,7 @@ JMP2r
 	&s 4620 6c00 4620 6c00
 	&l 4460 0e80 c440 2e00
 	&t 0e40 4c40 4e00 4640
-	&b cc00 cc00 cc00 cc00
+	&b 6600 6600 6600 6600
 @blank-chr
 	ffff ffff ffff ffff
 @block-icn
