@@ -54,11 +54,13 @@ BRK
 		INC DUP .well/end LTH ,&loop JCN POP
 
 	.piece/rot LDZ INC #04 DIVk MUL SUB .piece/rot STZ
-	;pieces/i #00 .piece/rot LDZ #10 SFT ADD2 LDA2 #0b put-piece
-	;pieces/b #00 .piece/rot LDZ #10 SFT ADD2 LDA2 #3c put-piece
-	;pieces/t #00 .piece/rot LDZ #10 SFT ADD2 LDA2 #37 put-piece
-	;pieces/l #00 .piece/rot LDZ #10 SFT ADD2 LDA2 #65 put-piece
-	;pieces/s #00 .piece/rot LDZ #10 SFT ADD2 LDA2 #7d put-piece
+	;put-piece
+	;pieces/i #00 .piece/rot LDZ #10 SFT ADD2 LDA2 #0b try-piece
+	;pieces/b #00 .piece/rot LDZ #10 SFT ADD2 LDA2 #3c try-piece
+	;pieces/t #00 .piece/rot LDZ #10 SFT ADD2 LDA2 #37 try-piece
+	;pieces/l #00 .piece/rot LDZ #10 SFT ADD2 LDA2 #65 try-piece
+	;pieces/s #00 .piece/rot LDZ #10 SFT ADD2 LDA2 #7d try-piece
+	POP2
 
 	draw-well
 
@@ -86,7 +88,7 @@ BRK
 	INC DUP .well/end LTH ,&loop JCN POP
 JMP2r
 
-@draw-block ( well-nibble -- )
+@draw-block ( well-value -- )
 	DUP ,&block JCN
 
 	( draw blank space )
@@ -105,30 +107,45 @@ JMP2r
 		&no-eol
 JMP2r
 
-@put-piece ( piece16 well -- ) 
-	#22 ADD #00 SWP SWP2
+@put-piece ( well-idx -- )
+	#01 SWP STZ
+JMP2r
+
+@try-piece ( addr16 piece16 well-idx -- addr16 )
+	#22 ADD ( go backward from bottom-right )
+	#01 ( col-count, 0-3 )
+	SWP2 ( well-idx col-count piece16 )
+
 	&loop
 
-	DUP2 NIP #01 AND
-		,&draw JCN
-		,&no-draw JMP
+	( test whether a piece block is at well-idx )
+	DUP #01 AND ,&ok JCN ,&p-ok JMP
+	&ok 
+		( put well-idx on top and call addr16 ) 
+		SWP2 ROT2 OVR2 SWP OVR2 JSR2
+		( return stack to previous state )
+		POP SWP2 ROT2
+	&p-ok
 
+	SWP2 ( piece16 well-idx col-count )
+	( col-count %= 4 )
+	#04 DIVk MUL SUB
+	( if col-count == 0, move to next row )
+	SWP OVR ,&inc JCN #06 SUB
+	&inc 
+	( decrement well-idx )
+	#01 SUB SWP
+	( increment col-count )
+	INC
+	SWP2 ( well-idx col-count piece16 )
 
-	&draw SWP2 #01 OVR STZ
-		,&post-draw JMP 
-	&no-draw SWP2
-	&post-draw
+	( have we run out of piece blocks to try? )
+	#01 SFT2 DUP2 #0000 GTH2
+		,&loop JCN
 
-	( line ) SWP DUP #02 GTH
-		,&next-line JCN
-	INC SWP
-		,&post-line JMP
-	&next-line POP #00 SWP #06 SUB
-	&post-line #01 SUB SWP2
+	POP2 POP2 ( well-idx col-count piece16 -- )
 
-	#01 SFT2 DUP2 #0000 GTH2 ,&loop JCN
-
-	POP2 POP2
+	( leave addr16 on the stack )
 JMP2r
 
 ( assets )
