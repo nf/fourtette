@@ -14,7 +14,7 @@
 ( program )
 
 @cur-pos  &type $1 &rot $1 &x $1 &y $1
-@test-pos &type $1 &rot $1 &x $1 &y $1
+@next-pos &type $1 &rot $1 &x $1 &y $1
 
 |0100 ( -> )
 
@@ -89,16 +89,11 @@ JMP2r
 		&no-eol
 JMP2r
 
-@set-cur-piece ( -- )
-	;set-cur-piece-block
-	;pieces
-		#00 .cur-pos/type LDZ #30 SFT ADD2
-		#00 .cur-pos/rot LDZ #10 SFT ADD2
-		LDA2
-	each-piece-block POP2
+@test-next-piece ( -- ok )
+	;test-next-piece-block .next-pos each-piece-block
 JMP2r
 
-@set-cur-piece-block ( well-idx -- )
+@test-next-piece-block ( well-idx -- )
 	#00 SWP
 	;well ADD2
 	#00 .cur-pos/y LDZ #0010 MUL2 ADD2
@@ -106,7 +101,27 @@ JMP2r
 	#01 ROT ROT STA
 JMP2r
 
-@each-piece-block ( block-func piece16 -- block-func )
+@set-cur-piece ( -- )
+	;set-cur-piece-block .cur-pos each-piece-block
+JMP2r
+
+@set-cur-piece-block ( well-idx -- )
+	#01 SWP .cur-pos pos-to-well-addr STA
+JMP2r
+
+@pos-to-well-addr ( well-idx pos -- well-addr )
+	INC INC INCk LDZ SWP LDZ SWP
+	#00 SWP #0010 MUL2
+	ROT #00 SWP ADD2
+	;well ADD2
+	ROT #00 SWP ADD2
+JMP2r
+
+@each-piece-block ( block-func pos -- )
+	LDZk #30 SFT ( type ) 
+	SWP INC LDZ #10 SFT ( rot )
+	ADD #00 SWP 
+	;pieces ADD2 LDA2 ( piece16 )
 	#33 ( go backward from bottom-right )
 	#01 ( col-count, 0-3 )
 	SWP2 ( block-func well-idx col-count piece16 )
@@ -138,7 +153,7 @@ JMP2r
 	#01 SFT2 DUP2 #0000 GTH2
 		,&loop JCN
 
-	POP2 POP2 ( leave block-func on the stack )
+	POP2 POP2 POP2
 JMP2r
 
 ( assets )
