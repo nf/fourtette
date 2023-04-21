@@ -34,12 +34,7 @@
 	#06 .cur-pos/x STZ
 	#06 .cur-pos/y STZ
 
-	;set-cur-piece 
-	;pieces
-		#00 .cur-pos/type LDZ #30 SFT ADD2
-		#00 .cur-pos/rot LDZ #10 SFT ADD2
-		LDA2
-	each-piece-block POP2
+	set-cur-piece
 
 	( set-test-pattern )
 	draw-well
@@ -94,7 +89,16 @@ JMP2r
 		&no-eol
 JMP2r
 
-@set-cur-piece ( well-idx -- )
+@set-cur-piece ( -- )
+	;set-cur-piece-block
+	;pieces
+		#00 .cur-pos/type LDZ #30 SFT ADD2
+		#00 .cur-pos/rot LDZ #10 SFT ADD2
+		LDA2
+	each-piece-block POP2
+JMP2r
+
+@set-cur-piece-block ( well-idx -- )
 	#00 SWP
 	;well ADD2
 	#00 .cur-pos/y LDZ #0010 MUL2 ADD2
@@ -102,23 +106,23 @@ JMP2r
 	#01 ROT ROT STA
 JMP2r
 
-@each-piece-block ( addr16 piece16 -- addr16 )
+@each-piece-block ( block-func piece16 -- block-func )
 	#33 ( go backward from bottom-right )
 	#01 ( col-count, 0-3 )
-	SWP2 ( well-idx col-count piece16 )
+	SWP2 ( block-func well-idx col-count piece16 )
 
 	&loop
 
 	( test whether a piece block is at well-idx )
 	DUP #01 AND ,&ok JCN ,&p-ok JMP
 	&ok 
-		( put well-idx on top and call addr16 ) 
+		( put well-idx on top and call block-func ) 
 		SWP2 ROT2 OVR2 SWP OVR2 JSR2
 		( return stack to previous state )
 		POP SWP2 ROT2
 	&p-ok
 
-	SWP2 ( piece16 well-idx col-count )
+	SWP2 ( block-func piece16 well-idx col-count )
 	( col-count %= 4 )
 	#04 DIVk MUL SUB
 	( if col-count == 0, move to next row )
@@ -128,15 +132,13 @@ JMP2r
 	#01 SUB SWP
 	( increment col-count )
 	INC
-	SWP2 ( well-idx col-count piece16 )
+	SWP2 ( block-func well-idx col-count piece16 )
 
 	( have we run out of piece blocks to try? )
 	#01 SFT2 DUP2 #0000 GTH2
 		,&loop JCN
 
-	POP2 POP2 ( well-idx col-count piece16 -- )
-
-	( leave addr16 on the stack )
+	POP2 POP2 ( leave block-func on the stack )
 JMP2r
 
 ( assets )
