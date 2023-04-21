@@ -13,8 +13,8 @@
 
 ( program )
 
-@cur-pos  &type $1 &rot $1 &x $1 &y $1
-@next-pos &type $1 &rot $1 &x $1 &y $1
+@cur  &type $1 &rot $1 &x $1 &y $1
+@next &type $1 &rot $1 &x $1 &y $1 &ok $1
 
 |0100 ( -> )
 
@@ -31,8 +31,10 @@
 	#0100 .Screen/width DEO2
 	#0100 .Screen/height DEO2
 
-	#06 .cur-pos/x STZ
-	#06 .cur-pos/y STZ
+	init-well
+
+	#06 .cur/x STZ
+	#06 .cur/y STZ
 
 	set-cur-piece
 
@@ -43,6 +45,20 @@ BRK
 @set-test-pattern ( -- )
 	;well &loop
 		DUP2 DUP #03 AND ROT ROT STA
+	INC2 DUP2 ;well/end LTH2 ,&loop JCN POP2
+JMP2r
+
+@init-well ( -- )
+	;well &loop
+		DUP2 #0ff0 AND2
+		DUP2 #0040 LTH2 ,&skip JCN
+		DUP2 #0170 GTH2 ,&skip JCN
+		POP2 DUP2 #000f AND2
+		DUP #04 LTH ,&skip JCN
+		DUP #0d GTH ,&skip JCN
+		POP2 DUP2 #00 ,&set JMP
+		&skip POP2 DUP2 #02 
+		&set ROT ROT STA
 	INC2 DUP2 ;well/end LTH2 ,&loop JCN POP2
 JMP2r
 
@@ -90,23 +106,20 @@ JMP2r
 JMP2r
 
 @test-next-piece ( -- ok )
-	;test-next-piece-block .next-pos each-piece-block
+	;test-next-piece-block .next each-piece-block
 JMP2r
 
 @test-next-piece-block ( well-idx -- )
-	#00 SWP
-	;well ADD2
-	#00 .cur-pos/y LDZ #0010 MUL2 ADD2
-	#00 .cur-pos/x LDZ ADD2
-	#01 ROT ROT STA
+	.next pos-to-well-addr LDA #02 AND
+	.next/ok LDZ ORA
 JMP2r
 
 @set-cur-piece ( -- )
-	;set-cur-piece-block .cur-pos each-piece-block
+	;set-cur-piece-block .cur each-piece-block
 JMP2r
 
 @set-cur-piece-block ( well-idx -- )
-	#01 SWP .cur-pos pos-to-well-addr STA
+	#01 SWP .cur pos-to-well-addr STA
 JMP2r
 
 @pos-to-well-addr ( well-idx pos -- well-addr )
