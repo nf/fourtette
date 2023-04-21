@@ -13,39 +13,56 @@
 
 ( program )
 
+@well
+	$c8 ( 10x20 blocks, 1 byte per block )
+	&end
 @piece
 	&type $1
 	&rot $1
 	&x $1 &y $1 ( offset from well top-left )
-@well
-	$64 ( 10x20 blocks, 1 nibble per block )
-	&end
+
+@counter $1
 
 |0100 ( -> )
 
 	( theme ) 
-	#0fad .System/r DEO2 
-	#0dfa .System/g DEO2 
-	#0adf .System/b DEO2
+	#0fa5 .System/r DEO2 
+	#0df2 .System/g DEO2 
+	#0ad9 .System/b DEO2
 
 	( vectors )
-	( ;on-frame .Screen/vector DEO2 )
+	;on-frame .Screen/vector DEO2
 	( ;on-button .Controller/vector DEO2 )
 
 	( resize )
 	#0100 .Screen/width DEO2
 	#0100 .Screen/height DEO2
 
+	(
 	.well &loop
-		DUP #01 AND #10 SFT
-		DUP #40 SFT #01 ORA ORA OVR STZ
+		DUP #03 AND OVR STZ
 		INC DUP .well/end LTH ,&loop JCN
-		
-	draw-well
+	)
 BRK
 
 @on-frame ( -> )
 
+	.counter LDZ INCk #10 DIVk MUL SUB .counter STZ ;&done JCN2
+
+	.well &loop
+		#00 OVR STZ
+		INC DUP .well/end LTH ,&loop JCN POP
+
+	.piece/rot LDZ INC #04 DIVk MUL SUB .piece/rot STZ
+	;pieces/i #00 .piece/rot LDZ #10 SFT ADD2 LDA2 #0b put-piece
+	;pieces/b #00 .piece/rot LDZ #10 SFT ADD2 LDA2 #3c put-piece
+	;pieces/t #00 .piece/rot LDZ #10 SFT ADD2 LDA2 #37 put-piece
+	;pieces/l #00 .piece/rot LDZ #10 SFT ADD2 LDA2 #65 put-piece
+	;pieces/s #00 .piece/rot LDZ #10 SFT ADD2 LDA2 #7d put-piece
+
+	draw-well
+
+	&done
 BRK
 
 @on-button ( -> )
@@ -56,19 +73,17 @@ BRK
 BRK
 
 @draw-well ( -- )
+	#0000 .Screen/x DEO2
+	#0000 .Screen/y DEO2
+	#83 .Screen/pixel DEO
+
 	#0058 .Screen/x DEO2
 	#0038 .Screen/y DEO2
 	#01 .Screen/auto DEO
 	.well &loop
 		( load well byte )
-		LDZk DUP
-		( draw high nibble )
-		#04 SFT draw-block
-		( draw low nibble )
-		#0f AND draw-block
-
-		INC DUP .well/end LTH ,&loop JCN
-	POP
+		LDZk draw-block
+	INC DUP .well/end LTH ,&loop JCN POP
 JMP2r
 
 @draw-block ( well-nibble -- )
@@ -83,15 +98,47 @@ JMP2r
 		;block-icn .Screen/addr DEO2
 		#80 ORA .Screen/sprite DEO
 
-	&inc ( increment screen x/y )
+	&inc ( adjust screen x/y )
 		.Screen/x DEI2 #00a8 LTH2 ,&no-eol JCN
 			#0058 .Screen/x DEO2
 			.Screen/y DEI2 #0008 ADD2 .Screen/y DEO2
 		&no-eol
 JMP2r
 
+@put-piece ( piece16 well -- ) 
+	#22 ADD #00 SWP SWP2
+	&loop
+
+	DUP2 NIP #01 AND
+		,&draw JCN
+		,&no-draw JMP
+
+
+	&draw SWP2 #01 OVR STZ
+		,&post-draw JMP 
+	&no-draw SWP2
+	&post-draw
+
+	( line ) SWP DUP #02 GTH
+		,&next-line JCN
+	INC SWP
+		,&post-line JMP
+	&next-line POP #00 SWP #06 SUB
+	&post-line #01 SUB SWP2
+
+	#01 SFT2 DUP2 #0000 GTH2 ,&loop JCN
+
+	POP2 POP2
+JMP2r
+
 ( assets )
 
+@pieces
+	&i 0f00 4444 0f00 4444
+	&s 4620 6c00 4620 6c00
+	&l 4460 0e80 c440 2e00
+	&t 0e40 4c40 4e00 4640
+	&b cc00 cc00 cc00 cc00
 @blank-chr
 	ffff ffff ffff ffff
 @block-icn
