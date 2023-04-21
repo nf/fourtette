@@ -12,7 +12,7 @@
 |0000
 
 @cur  &type $1 &rot $1 &x $1 &y $1
-@next &type $1 &rot $1 &x $1 &y $1 &ok $1
+@next &type $1 &rot $1 &x $1 &y $1 &blocked $1
 
 @timer $1
 
@@ -27,7 +27,7 @@
 
 	( vectors )
 	;on-frame .Screen/vector DEO2
-	( ;on-button .Controller/vector DEO2 )
+	;on-button .Controller/vector DEO2
 
 	( resize )
 	#0100 .Screen/width DEO2
@@ -42,32 +42,37 @@ BRK
 
 @on-frame ( -> )
 
-	.timer LDZ INC #10 DIVk MUL SUB .timer STZk POP ,&no-update JCN
-
-	update
-
-	&no-update
-
-	draw-well
-BRK
-
-@update
 	.cur/type LDZ .next/type STZ
 	.cur/rot LDZ .next/rot STZ
 	.cur/y LDZ .next/y STZ
 	.cur/x LDZ .next/x STZ
 
+	( left/right )
+	.Controller/button DEI
+	DUP #40 AND ,&lt JCN ,&p-lt JMP &lt
+		.next/x LDZ #01 SUB .next/x STZ
+		&p-lt
+	DUP #80 AND ,&rt JCN ,&p-rt JMP &rt
+		.next/x LDZ INC .next/x STZ
+		&p-rt 
+	POP
+
 	( gravity )
+	.timer LDZ INC #10 DIVk MUL SUB .timer STZk POP ,&p-gravity JCN
 	.next/y LDZ INC .next/y STZ
+	&p-gravity
 
 	test-next-piece ,&blocked JCN
-
 	unset-cur-piece
+	.next/x LDZ .cur/x STZ
 	.next/y LDZ .cur/y STZ
 	set-cur-piece
-
 	&blocked
-JMP2r
+
+	draw-well
+BRK
+
+@on-button ( -> ) BRK
 
 @set-test-pattern ( -- )
 	;well &loop
@@ -132,15 +137,15 @@ JMP2r
 		&no-eol
 JMP2r
 
-@test-next-piece ( -- ok )
-	#00 .next/ok STZ
+@test-next-piece ( -- blocked )
+	#00 .next/blocked STZ
 	;test-next-piece-block .next each-piece-block
-	.next/ok LDZ
+	.next/blocked LDZ
 JMP2r
 
 @test-next-piece-block ( well-idx -- )
 	.next pos-to-well-addr LDA #02 AND
-	.next/ok LDZ ORA .next/ok STZ
+	.next/blocked LDZ ORA .next/blocked STZ
 JMP2r
 
 @set-cur-piece ( -- )
