@@ -57,6 +57,7 @@ BRK
 		&p-rt 
 	POP
 
+	( test x change )
 	.next/x LDZ .cur/x LDZ EQU ,&x-done JCN
 	test-next-piece ,&x-blocked JCN
 	unset-cur-piece
@@ -68,8 +69,12 @@ BRK
 	&x-done
 
 	( gravity )
-	.timer LDZ INC #10 DIVk MUL SUB .timer STZk POP ,&y-done JCN
+	.timer LDZ INC #10 DIVk MUL SUB .timer STZk POP ,&no-gravity JCN
 	.next/y LDZ INC .next/y STZ
+	&no-gravity
+
+	( test y change )
+	.next/y LDZ .cur/y LDZ EQU ,&y-done JCN
 	test-next-piece ,&y-blocked JCN
 	unset-cur-piece
 	.next/y LDZ .cur/y STZ
@@ -77,12 +82,18 @@ BRK
 	,&y-done JMP
 	&y-blocked
 	freeze-cur-piece
-	#07 .cur/x STZ
-	#00 .cur/y STZ
+	new-cur
 	&y-done
 
 	draw-well
 BRK
+
+@new-cur ( -- )
+	#07 .cur/x STZ
+	#00 .cur/y STZ
+	#00 .cur/rot STZ
+	.cur/type LDZ INC #05 DIVk MUL SUB .cur/type STZ
+JMP2r
 
 @on-button ( -> ) BRK
 
