@@ -35,8 +35,8 @@
 
 	init-well
 
-	#06 .cur/x STZ
-	#06 .cur/y STZ
+	#07 .cur/x STZ
+	#00 .cur/y STZ
 	set-cur-piece
 BRK
 
@@ -57,17 +57,29 @@ BRK
 		&p-rt 
 	POP
 
-	( gravity )
-	.timer LDZ INC #10 DIVk MUL SUB .timer STZk POP ,&p-gravity JCN
-	.next/y LDZ INC .next/y STZ
-	&p-gravity
-
-	test-next-piece ,&blocked JCN
+	.next/x LDZ .cur/x LDZ EQU ,&x-done JCN
+	test-next-piece ,&x-blocked JCN
 	unset-cur-piece
 	.next/x LDZ .cur/x STZ
+	set-cur-piece
+	,&x-done JMP
+	&x-blocked
+	.cur/x LDZ .next/x STZ
+	&x-done
+
+	( gravity )
+	.timer LDZ INC #10 DIVk MUL SUB .timer STZk POP ,&y-done JCN
+	.next/y LDZ INC .next/y STZ
+	test-next-piece ,&y-blocked JCN
+	unset-cur-piece
 	.next/y LDZ .cur/y STZ
 	set-cur-piece
-	&blocked
+	,&y-done JMP
+	&y-blocked
+	freeze-cur-piece
+	#07 .cur/x STZ
+	#00 .cur/y STZ
+	&y-done
 
 	draw-well
 BRK
@@ -83,7 +95,6 @@ JMP2r
 @init-well ( -- )
 	;well &loop
 		DUP2 #0ff0 AND2
-		DUP2 #0040 LTH2 ,&skip JCN
 		DUP2 #0170 GTH2 ,&skip JCN
 		POP2 DUP2 #000f AND2
 		DUP #04 LTH ,&skip JCN
@@ -162,6 +173,14 @@ JMP2r
 
 @unset-cur-piece-block ( well-idx -- )
 	.cur pos-to-well-addr LDAk #fe AND ROT ROT STA
+JMP2r
+
+@freeze-cur-piece ( -- )
+	;freeze-cur-piece-block .cur each-piece-block
+JMP2r
+
+@freeze-cur-piece-block ( well-idx -- )
+	#02 SWP .cur pos-to-well-addr STA
 JMP2r
 
 @pos-to-well-addr ( well-idx pos -- well-addr )
