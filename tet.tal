@@ -21,8 +21,6 @@
 	&rot $1
 	&x $1 &y $1 ( offset from well top-left )
 
-@counter $1
-
 |0100 ( -> )
 
 	( theme ) 
@@ -32,45 +30,56 @@
 
 	( vectors )
 	;on-frame .Screen/vector DEO2
-	( ;on-button .Controller/vector DEO2 )
+	;on-button .Controller/vector DEO2
 
 	( resize )
 	#0100 .Screen/width DEO2
 	#0100 .Screen/height DEO2
-
-	(
-	.well &loop
-		DUP #03 AND OVR STZ
-		INC DUP .well/end LTH ,&loop JCN
-	)
 BRK
 
 @on-frame ( -> )
-
-	.counter LDZ INCk #10 DIVk MUL SUB .counter STZ ;&done JCN2
 
 	.well &loop
 		#00 OVR STZ
 		INC DUP .well/end LTH ,&loop JCN POP
 
-	.piece/rot LDZ INC #04 DIVk MUL SUB .piece/rot STZ
 	;put-piece
-	;pieces/i #00 .piece/rot LDZ #10 SFT ADD2 LDA2 #0b try-piece
-	;pieces/b #00 .piece/rot LDZ #10 SFT ADD2 LDA2 #3c try-piece
-	;pieces/t #00 .piece/rot LDZ #10 SFT ADD2 LDA2 #37 try-piece
-	;pieces/l #00 .piece/rot LDZ #10 SFT ADD2 LDA2 #65 try-piece
-	;pieces/s #00 .piece/rot LDZ #10 SFT ADD2 LDA2 #7d try-piece
+	;pieces
+		#00 .piece/type LDZ #30 SFT ADD2
+		#00 .piece/rot LDZ #10 SFT ADD2
+		LDA2
+	.well
+		.piece/y LDZ #0a MUL
+		.piece/x LDZ
+		ADD ADD
+	each-piece-block
 	POP2
 
 	draw-well
-
-	&done
 BRK
 
 @on-button ( -> )
-
 	.Controller/button DEI 
-	POP
+
+	DUP #10 AND ,&up JCN ,&p-up JMP &up
+		.piece/y LDZ #01 SUB .piece/y STZ
+		&p-up
+	DUP #20 AND ,&dn JCN ,&p-dn JMP &dn
+		.piece/y LDZ INC .piece/y STZ
+		&p-dn
+	DUP #40 AND ,&lt JCN ,&p-lt JMP &lt
+		.piece/x LDZ #01 SUB .piece/x STZ
+		&p-lt
+	DUP #80 AND ,&rt JCN ,&p-rt JMP &rt
+		.piece/x LDZ INC .piece/x STZ
+		&p-rt 
+	DUP #01 AND ,&a JCN ,&p-a JMP &a
+		.piece/type LDZ INC #05 DIVk MUL SUB .piece/type STZ
+		&p-a
+	DUP #02 AND ,&b JCN ,&p-b JMP &b
+		.piece/rot LDZ INC #04 DIVk MUL SUB .piece/rot STZ
+		&p-b
+	POP BRK
 
 BRK
 
@@ -111,8 +120,8 @@ JMP2r
 	#01 SWP STZ
 JMP2r
 
-@try-piece ( addr16 piece16 well-idx -- addr16 )
-	#22 ADD ( go backward from bottom-right )
+@each-piece-block ( addr16 piece16 well-idx -- addr16 )
+	#21 ADD ( go backward from bottom-right )
 	#01 ( col-count, 0-3 )
 	SWP2 ( well-idx col-count piece16 )
 
