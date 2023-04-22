@@ -40,6 +40,7 @@
 	#07 .cur/x STZ
 	#03 .cur/y STZ
 
+	draw-bg
 	init-well
 	set-cur-piece
 BRK
@@ -149,25 +150,30 @@ JMP2r
 	INC2 DUP2 ;well/end LTH2 ,&loop JCN POP2
 JMP2r
 
-@draw-well ( -- )
+@draw-bg ( -- )
 	#0000 .Screen/x DEO2
 	#0000 .Screen/y DEO2
 	#83 .Screen/pixel DEO
+JMP2r
 
+@draw-well ( -- )
 	#0058 .Screen/x DEO2
 	#0038 .Screen/y DEO2
 	#01 .Screen/auto DEO
-
 	#0043 &loop
 		INC2
+		DUP #0f AND #0d GTH
+			,&eol JCN
 		DUP2 #0180 GTH2
 			,&done JCN
-		DUP #04 SUB #0f AND #09 GTH
-			,&loop JCN
 		DUP2 ;well ADD2 LDA draw-block
 			,&loop JMP
-	&done
-	POP2
+		&eol
+			#0058 .Screen/x DEO2
+			#0008 .Screen/y DEI2 ADD2 .Screen/y DEO2
+			#0005 ADD2
+			,&loop JMP
+	&done POP2
 JMP2r
 
 @draw-block ( well-value -- )
@@ -176,17 +182,11 @@ JMP2r
 	( draw blank space )
 		;blank-chr .Screen/addr DEO2
 		.Screen/sprite DEO
-		,&inc JMP
+		JMP2r
 
 	&block ( draw block )
 		;block-icn .Screen/addr DEO2
 		#80 ORA .Screen/sprite DEO
-
-	&inc ( adjust screen x/y )
-		.Screen/x DEI2 #00a8 LTH2 ,&no-eol JCN
-			#0058 .Screen/x DEO2
-			.Screen/y DEI2 #0008 ADD2 .Screen/y DEO2
-		&no-eol
 JMP2r
 
 @test-next-piece ( -- blocked )
