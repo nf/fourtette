@@ -1,3 +1,5 @@
+( untitled block game - a wip by nf@wh3rd.net )
+
 ( devices )
 
 |00 @System     [ &vector $2 &wst      $1 &rst    $1 &pad   $4 &r      $2 &g      $2 &b    $2 &debug  $1 &halt $1 ]
@@ -190,8 +192,7 @@ JMP2r
 	.next each-piece-block
 	.next/blocked LDZ
 JMP2r
-	&vec ( well-idx piece -- )
-		piece-well-addr
+	&vec ( well-addr -- )
 		LDA #02 AND .next/blocked LDZ ORA .next/blocked STZ
 	JMP2r
 
@@ -199,8 +200,7 @@ JMP2r
 	;&vec .cur/vec STZ2
 	.cur each-piece-block
 JMP2r
-	&vec ( well-idx piece -- )
-		piece-well-addr 
+	&vec ( well-addr -- )
 		#01 ROT ROT STA
 	JMP2r
 
@@ -208,8 +208,7 @@ JMP2r
 	;&vec .cur/vec STZ2
 	.cur each-piece-block
 JMP2r
-	&vec ( well-idx piece -- )
-		piece-well-addr
+	&vec ( well-addr -- )
 		LDAk #fe AND ROT ROT STA
 	JMP2r
 
@@ -217,18 +216,9 @@ JMP2r
 	;&vec .cur/vec STZ2
 	.cur each-piece-block
 JMP2r
-	&vec ( well-idx piece -- )
-		piece-well-addr
+	&vec ( well-addr -- )
 		#02 ROT ROT STA
 	JMP2r
-
-@piece-well-addr ( well-idx piece -- well-addr )
-	INC INC INCk LDZ SWP LDZ SWP
-	#00 SWP #0010 MUL2
-	ROT #00 SWP ADD2
-	;well ADD2
-	ROT #00 SWP ADD2
-JMP2r
 
 @each-piece-block ( piece -- )
 	DUP
@@ -247,10 +237,19 @@ JMP2r
 	&ok 
 		( stash piece16 and arrange to call piece/vec )
 		STH2 SWP ROT ( col-count well-idx piece )
-		( call piece/vec with ( well-idx piece ) )
-		DUP2 DUP #04 ADD LDZ2 JSR2
+		( well-idx piece -- piece well-addr )
+		DUP2 SWP OVR
+		INC INC INCk LDZ SWP LDZ SWP
+		#00 SWP #0010 MUL2
+		ROT #00 SWP ADD2
+		;well ADD2
+		ROT #00 SWP ADD2
+		( piece well-addr -- well-addr piece/vec )
+		ROT #04 ADD LDZ2
+		( call piece/vec )
+		JSR2
 		( restore stack )
-		SWP ROT STH2r ( piece well-idx col-count piece 16 )
+		SWP ROT STH2r ( piece well-idx col-count piece16 )
 	&p-ok
 
 	SWP2 ( piece piece16 well-idx col-count )
