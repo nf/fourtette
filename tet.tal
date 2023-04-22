@@ -6,6 +6,9 @@
 %debug { #00 .System/debug DEO }
 %halt  { #81 .System/halt DEO }
 
+%well_x { #0058 }
+%well_y { #0040 }
+
 ( devices )
 
 |00 @System     [ &vector $2 &wst      $1 &rst    $1 &pad   $4 &r      $2 &g      $2 &b    $2 &debug  $1 &halt $1 ]
@@ -144,6 +147,16 @@ BRK
 	draw-bg-boxes
 JMP2r
 
+@draw-bg-boxes ( -- )
+	( main field )
+	well_x NIP #08 SUB 
+	well_y NIP #08 SUB 
+	#58 #a8 draw-box 
+
+	( next piece )
+	#b0 #b0 #30 #30 draw-box
+JMP2r
+
 @draw-bg-textures ( -- )
 	;bg/stripes .Screen/addr DEO2
 	#f2 .Screen/auto DEO
@@ -162,44 +175,15 @@ JMP2r
 
 	;bg/dots .Screen/addr DEO2
 	#92 .Screen/auto DEO
-	#0090 .Screen/x DEO2
-	#0030 .Screen/y DEO2
+	well_x .Screen/x DEO2
+	well_y .Screen/y DEO2
 	#00
 	&loop-d
-		INC #01 AND DUP #40 SFT 
-		#03 ORA
-		.Screen/sprite DEO
-		.Screen/y DEI2 #00d8 LTH2
+		INC DUP 
+		#01 AND #40 SFT #03 ORA .Screen/sprite DEO
+		DUP #14 LTH
 			,&loop-d JCN
 	POP
-JMP2r
-
-@draw-bg-boxes ( -- )
-	%draw_edge { #00 SWP .Screen/y DEO2 #00 SWP .Screen/x DEO2 .Screen/sprite DEO }
-
-	#88 #28 #58 #a8 draw-box 
-
-	JMP2r
-
-	( corners )
-	;border-chr/corner .Screen/addr DEO2
-	#00 .Screen/auto DEO
-	( tl ) #8a #50 #30 draw_edge
-	( tr ) #9a #a8 #30 draw_edge
-	( bl ) #aa #50 #d8 draw_edge
-	( br ) #ba #a8 #d8 draw_edge
-
-	( edges )
-	;border-chr/edge-ver .Screen/addr DEO2
-	#91 .Screen/auto DEO
-	( lt ) #8a #50 #38 draw_edge
-	       #8a #50 #88 draw_edge
-	( rt ) #9a #a8 #38 draw_edge
-	       #9a #a8 #88 draw_edge
-	;border-chr/edge-hor .Screen/addr DEO2
-	#92 .Screen/auto DEO
-	( tp ) #8a #58 #30 draw_edge
-	( bt ) #aa #58 #d8 draw_edge
 JMP2r
 
 @draw-box ( x y w h -- )
@@ -268,8 +252,8 @@ JMP2r
 JMP2r
 
 @draw-well ( -- )
-	#0090 .Screen/x DEO2
-	#0030 .Screen/y DEO2
+	well_x .Screen/x DEO2
+	well_y .Screen/y DEO2
 	#01 .Screen/auto DEO
 	#0043 ;well ADD2 &loop
 		INC2
@@ -290,7 +274,7 @@ JMP2r
 			#c0 ORA .Screen/sprite DEO
 				,&loop JMP
 		&eol
-			#0090 .Screen/x DEO2
+			well_x .Screen/x DEO2
 			#0008 .Screen/y DEI2 ADD2 .Screen/y DEO2
 			#0005 ADD2
 			,&loop JMP
@@ -337,7 +321,6 @@ JMP2r
 JMP2r
 
 @remove-well-line ( well-addr-on-line -- )
-	#fff0 AND2 #0010 ADD2
 	&loop
 		#0001 SUB2
 		( read block from line above )
