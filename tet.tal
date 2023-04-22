@@ -64,16 +64,17 @@ BRK
 		&p-rt 
 	POP
 
-	( test x change )
+	( test x/rot change )
 	.next/rot LDZ .cur/rot LDZ EQU 
 	.next/x LDZ .cur/x LDZ EQU 
-	AND ,&x-done JCN
-	test-next-piece ,&x-blocked JCN
+		AND ,&x-done JCN
+	test-next-piece
+		,&x-blocked JCN
 	unset-cur-piece
 	.next/rot LDZ .cur/rot STZ
 	.next/x LDZ .cur/x STZ
 	set-cur-piece
-	,&x-done JMP
+		,&x-done JMP
 	&x-blocked
 	.cur/rot LDZ .next/rot STZ
 	.cur/x LDZ .next/x STZ
@@ -81,21 +82,26 @@ BRK
 
 	#00 ( inc-y? )
 	( gravity )
-	.timer/tick LDZ INC .timer/speed LDZ DIVk MUL SUB .timer/tick STZk POP ,&no-gravity JCN
-		INC
-		&no-gravity
+	.timer/tick LDZ INC
+	.timer/speed LDZ DIVk MUL SUB
+	DUP .timer/tick STZ
+		,&p-tick JCN
+	INC
+	&p-tick
 	( down button )
-	.Controller/button DEI #20 AND ,&dn JCN ,&p-dn JMP
-		&dn INC
-		&p-dn
+	.Controller/button DEI #20 AND #20 EOR ,&p-dn JCN
+		INC
+	&p-dn
 	( test y change )
-	#01 LTH ,&y-done JCN
+	#01 LTH
+		,&y-done JCN
 	.cur/y LDZ INC .next/y STZ
-	test-next-piece ,&y-blocked JCN
+	test-next-piece
+		,&y-blocked JCN
 	unset-cur-piece
 	.next/y LDZ .cur/y STZ
 	set-cur-piece
-	,&y-done JMP
+		,&y-done JMP
 	&y-blocked
 	freeze-cur-piece
 	new-cur
@@ -108,7 +114,7 @@ BRK
 	.Controller/button DEI .debounce LDZ AND .debounce STZ
 BRK
 
-@pressed ( button code -- nope )
+@pressed ( button code -- not-pressed )
 	DUP2 AND ,&held JCN ,&no JMP 
 	&held
 		DUP .debounce LDZ AND ,&no JCN
