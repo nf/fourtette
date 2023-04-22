@@ -24,6 +24,7 @@
 
 @debounce $1
 @timer    &tick $1 &speed $1
+@is-compact $1
 
 ( program )
 
@@ -52,7 +53,10 @@
 BRK
 
 @on-frame ( -> )
+	.is-compact LDZ
+		,&no-compact JCN
 	compact-well
+	DUP .is-compact STZ
 		,&no-compact JCN
 	set-cur-piece
 	&no-compact
@@ -116,6 +120,7 @@ BRK
 	&y-blocked
 	freeze-cur-piece
 	new-cur-piece
+	#00 .is-compact STZ
 	&y-done
 
 	draw-well
@@ -247,9 +252,8 @@ JMP2r
 			DUP #28 EQU
 				,&rem-line JCN
 			POP
-			&eol-done
-				#00 ROT ROT
-				#0005 ADD2
+			#00 ROT ROT
+			#0005 ADD2
 				,&loop JMP
 			&hl-line 
 				POP
@@ -258,12 +262,12 @@ JMP2r
 					DUP2 #04 ROT ROT STA
 					INC2 GTH2k
 						,&hl-block JCN
-				POP2
-				,&eol-done JMP
+				POP2 POP2 #00
+				JMP2r
 			&rem-line
 				POP
-				DUP2 remove-well-line
-				POP2 #00
+				remove-well-line
+				#00
 				JMP2r
 	&done POP2 POP #01
 JMP2r
