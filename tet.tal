@@ -71,6 +71,9 @@ BRK
 
 	( inputs )
 	.Controller/button DEI
+	#01 pressed ,&p-a JCN
+		.next/rot LDZ #03 ADD #04 MOD .next/rot STZ
+		&p-a
 	#02 pressed ,&p-b JCN
 		.next/rot LDZ INC #04 MOD .next/rot STZ
 		&p-b
