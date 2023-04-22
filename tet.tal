@@ -162,31 +162,28 @@ JMP2r
 	#01 .Screen/auto DEO
 	#0043 &loop
 		INC2
+		( check eol )
 		DUP #0f AND #0d GTH
 			,&eol JCN
+		( check bottom )
 		DUP2 #0180 GTH2
 			,&done JCN
-		DUP2 ;well ADD2 LDA draw-block
-			,&loop JMP
+		( draw blank or block? )
+		DUP2 ;well ADD2 LDA DUP ,&draw-block JCN
+		&draw-blank
+			;blank-chr .Screen/addr DEO2
+			.Screen/sprite DEO
+				,&loop JMP
+		&draw-block
+			;block-icn .Screen/addr DEO2
+			#80 ORA .Screen/sprite DEO
+				,&loop JMP
 		&eol
 			#0058 .Screen/x DEO2
 			#0008 .Screen/y DEI2 ADD2 .Screen/y DEO2
 			#0005 ADD2
 			,&loop JMP
 	&done POP2
-JMP2r
-
-@draw-block ( well-value -- )
-	DUP ,&block JCN
-
-	( draw blank space )
-		;blank-chr .Screen/addr DEO2
-		.Screen/sprite DEO
-		JMP2r
-
-	&block ( draw block )
-		;block-icn .Screen/addr DEO2
-		#80 ORA .Screen/sprite DEO
 JMP2r
 
 @test-next-piece ( -- blocked )
