@@ -158,19 +158,16 @@ JMP2r
 	#0038 .Screen/y DEO2
 	#01 .Screen/auto DEO
 
-	;well &loop
-		DUP2 #0ff0 AND2
-		DUP2 #0040 LTH2 ,&skip JCN
-		DUP2 #0170 GTH2 ,&skip JCN
-		POP2 DUP2 #000f AND2
-		DUP #04 LTH ,&skip JCN
-		DUP #0d GTH ,&skip JCN
-		POP2
-		LDAk draw-block
-		DUP2
-		&skip
-		POP2
-	INC2 DUP2 ;well/end LTH2 ,&loop JCN POP2
+	#0043 &loop
+		INC2
+		DUP2 #0180 GTH2
+			,&done JCN
+		DUP #04 SUB #0f AND #09 GTH
+			,&loop JCN
+		DUP2 ;well ADD2 LDA draw-block
+			,&loop JMP
+	&done
+	POP2
 JMP2r
 
 @draw-block ( well-value -- )
