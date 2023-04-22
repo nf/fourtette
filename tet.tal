@@ -10,6 +10,8 @@
 %well_screen_y { #0040 }
 %next_screen_x { #00b8 }
 %next_screen_y { #00b8 }
+%score_screen_x { #00b8 }
+%score_screen_y { #0088 }
 
 %well_line_start { #03 }
 %well_line_end { #0c }
@@ -40,6 +42,9 @@
 @debounce   $1
 @timer      &tick $1 &speed $1
 @is-compact $1
+
+@score
+	&lines $2
 
 ( program )
 
@@ -176,19 +181,28 @@ BRK
 
 	next_screen_x #0001 ADD2
 	next_screen_y #0002 ADD2 
-	;strings/next #01 draw-str
+	;strings/next #02 draw-str
+
+	score_screen_x #0001 ADD2
+	score_screen_y #0002 ADD2 
+	;strings/lines #02 draw-str
 JMP2r
 
 @draw-bg-boxes ( -- )
 	( main field )
 	well_screen_x NIP #08 SUB 
 	well_screen_y NIP #08 SUB 
-	#58 #a8 draw-box 
+	#58 #a8 #0a draw-box 
 
 	( next piece )
 	next_screen_x NIP #08 SUB
 	next_screen_y NIP #08 SUB
-	#30 #30 draw-box
+	#38 #30 #05 draw-box
+
+	( score )
+	score_screen_x NIP #08 SUB
+	score_screen_y NIP #08 SUB
+	#38 #28 #0f draw-box
 JMP2r
 
 @draw-bg-textures ( -- )
@@ -229,35 +243,52 @@ JMP2r
 	next_screen_y .Screen/y DEO2
 	#00 &next-y
 		INC 
-		DUP #04 MOD #02 AND #71 SFT 
+		DUP #04 MOD #71 SFT 
 		OVR #07 MOD #41 SFT ORA
 		#00 ORA .Screen/sprite DEO
-		DUP #18 GTH
+		DUP #1d GTH
 			,&next-done JCN
-		DUP #05 MOD
+		DUP #06 MOD
 			,&next-y JCN
 		next_screen_x .Screen/x DEO2
 		.Screen/y DEI2 #0008 ADD2 .Screen/y DEO2
 			,&next-y JMP
 	&next-done POP
+
+	score_screen_x .Screen/x DEO2
+	score_screen_y .Screen/y DEO2
+	#00 &score-y
+		INC 
+		DUP #05 MOD #41 SFT
+		#81 ORA .Screen/sprite DEO
+		DUP #17 GTH
+			,&score-done JCN
+		DUP #06 MOD
+			,&score-y JCN
+		score_screen_x .Screen/x DEO2
+		.Screen/y DEI2 #0008 ADD2 .Screen/y DEO2
+			,&score-y JMP
+	&score-done POP
 JMP2r
 
-@draw-box ( x y w h -- )
+@draw-box ( x y w h col -- )
+	STH
+
 	( corners )
 	;border-chr/corner .Screen/addr DEO2
 	#00 .Screen/auto DEO
 	( tl ) 
 	OVR2 #00 SWP .Screen/y DEO2 #00 SWP .Screen/x DEO2
-	#8a .Screen/sprite DEO
+	#80 STHkr ORA .Screen/sprite DEO
 	( tr )
 	SWP2k SWP2 #ff00 AND2 ADD2 #00 SWP .Screen/y DEO2 #00 SWP .Screen/x DEO2
-	#9a .Screen/sprite DEO
+	#90 STHkr ORA .Screen/sprite DEO
 	( bl )
 	SWP2k SWP2 #00ff AND2 ADD2 #00 SWP .Screen/y DEO2 #00 SWP .Screen/x DEO2
-	#aa .Screen/sprite DEO
+	#a0 STHkr ORA .Screen/sprite DEO
 	( br )
 	SWP2k SWP2 ADD2 #00 SWP .Screen/y DEO2 #00 SWP .Screen/x DEO2
-	#ba .Screen/sprite DEO
+	#b0 STHkr ORA .Screen/sprite DEO
 
 	( edges )
 	;border-chr/edge-ver .Screen/addr DEO2
@@ -265,14 +296,14 @@ JMP2r
 	( lt )
 	OVR2 #08 ADD #00 SWP .Screen/y DEO2 #00 SWP .Screen/x DEO2
 	DUP #08 SUB &lt-loop
-		#8a .Screen/sprite DEO
+		#80 STHkr ORA .Screen/sprite DEO
 		#08 SUB DUP
 			,&lt-loop JCN
 	POP
 	( rt )
 	SWP2k SWP2 #ff00 AND2 ADD2 #08 ADD #00 SWP .Screen/y DEO2 #00 SWP .Screen/x DEO2
 	DUP #08 SUB &rt-loop
-		#9a .Screen/sprite DEO
+		#90 STHkr ORA .Screen/sprite DEO
 		#08 SUB DUP
 			,&rt-loop JCN
 	POP
@@ -281,18 +312,20 @@ JMP2r
 	( tp ) 
 	OVR2 #00 SWP .Screen/y DEO2 #08 ADD #00 SWP .Screen/x DEO2
 	OVR #08 SUB &tp-loop
-		#8a .Screen/sprite DEO
+		#80 STHkr ORA .Screen/sprite DEO
 		#08 SUB DUP
 			,&tp-loop JCN
 	POP
 	( bt )
 	SWP2k SWP2 #00ff AND2 ADD2 #00 SWP .Screen/y DEO2 #08 ADD #00 SWP .Screen/x DEO2
 	OVR #08 SUB &bt-loop
-		#aa .Screen/sprite DEO
+		#a0 STHkr ORA .Screen/sprite DEO
 		#08 SUB DUP
 			,&bt-loop JCN
 	POP
 	POP2 POP2
+
+	STHr POP
 JMP2r
 
 @init-well ( -- )
@@ -406,6 +439,7 @@ JMP2r
 			&rem-line
 				POP
 				remove-well-line
+				.score/lines LDZ2 INC2 .score/lines STZ2
 				#00
 				JMP2r
 	&done POP2 POP #01
