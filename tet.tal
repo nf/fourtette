@@ -434,7 +434,7 @@ JMP2r
 
 	#00 .next/x STZ
 	#01 .next/y STZ
-	.next/type LDZ INC #06 MOD .next/type STZ
+	.next/type LDZ INC #07 MOD .next/type STZ
 JMP2r
 
 @set-cur-piece ( -- )
@@ -560,6 +560,7 @@ JMP2r
 @pieces
 	&i 0f00 4444 0f00 4444
 	&s 4620 6c00 4620 6c00
+	&z 2640 c600 2640 c600
 	&l 4460 0e80 c440 2e00
 	&j 6440 e200 44c0 08e0
 	&t 4640 0e40 4c40 4e00
