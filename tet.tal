@@ -164,16 +164,16 @@ JMP2r
 	#0058 .Screen/x DEO2
 	#0038 .Screen/y DEO2
 	#01 .Screen/auto DEO
-	#0043 &loop
+	#0043 ;well ADD2 &loop
 		INC2
 		( check eol )
 		DUP #0f AND #0d GTH
 			,&eol JCN
 		( check bottom )
-		DUP2 #0180 GTH2
+		DUP2 #0ff0 AND2 #0170 GTH2
 			,&done JCN
 		( draw blank or block? )
-		DUP2 ;well ADD2 LDA DUP ,&draw-block JCN
+		DUP2 LDA DUP ,&draw-block JCN
 		&draw-blank
 			;blank-chr .Screen/addr DEO2
 			.Screen/sprite DEO
