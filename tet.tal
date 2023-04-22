@@ -158,8 +158,8 @@ BRK
 	&y-done
 
 	draw-well
-
 	draw-next
+	draw-score
 BRK
 
 @on-button ( -> )
@@ -243,9 +243,8 @@ JMP2r
 	next_screen_y .Screen/y DEO2
 	#00 &next-y
 		INC 
-		DUP #04 MOD #71 SFT 
-		OVR #07 MOD #41 SFT ORA
-		#00 ORA .Screen/sprite DEO
+		DUP #05 MOD #41 SFT
+		#81 ORA .Screen/sprite DEO
 		DUP #1d GTH
 			,&next-done JCN
 		DUP #06 MOD
@@ -259,8 +258,9 @@ JMP2r
 	score_screen_y .Screen/y DEO2
 	#00 &score-y
 		INC 
-		DUP #05 MOD #41 SFT
-		#81 ORA .Screen/sprite DEO
+		DUP #04 MOD #71 SFT 
+		OVR #07 MOD #41 SFT ORA
+		#83 ORA .Screen/sprite DEO
 		DUP #17 GTH
 			,&score-done JCN
 		DUP #06 MOD
@@ -369,14 +369,14 @@ JMP2r
 				,&loop JMP
 		&eol
 			well_screen_x .Screen/x DEO2
-			#0008 .Screen/y DEI2 ADD2 .Screen/y DEO2
+			.Screen/y DEI2 #0008 ADD2 .Screen/y DEO2
 			#0005 ADD2
 			,&loop JMP
 	&done POP2
 JMP2r
 
 @draw-next ( -- )
-	next_screen_x #0004 ADD2 .Screen/x DEO2
+	next_screen_x #0008 ADD2 .Screen/x DEO2
 	next_screen_y #0004 ADD2 .Screen/y DEO2
 	#01 .Screen/auto DEO
 	;well-next #0001 SUB2 &loop
@@ -398,11 +398,19 @@ JMP2r
 			#c0 ORA .Screen/sprite DEO
 				,&loop JMP
 		&eol
-			next_screen_x #0004 ADD2 .Screen/x DEO2
-			#0008 .Screen/y DEI2 ADD2 .Screen/y DEO2
+			next_screen_x #0008 ADD2 .Screen/x DEO2
+			.Screen/y DEI2 #0008 ADD2 .Screen/y DEO2
 			#000a ADD2
 			,&loop JMP
 	&done POP2
+JMP2r
+
+@draw-score ( -- )
+	score_screen_x #0004 ADD2 
+	score_screen_y #0010 ADD2
+	.score/lines LDZ2
+	#41
+	draw-num
 JMP2r
 
 @compact-well ( -- noop )
@@ -585,6 +593,24 @@ JMP2r
 	#00 .Screen/auto DEO
 
 JMP2r
+
+@draw-num ( *x *y num* color -- )
+	#01 .Screen/auto DEO
+	STH
+	SWP2 .Screen/y DEO2
+	SWP2 .Screen/x DEO2
+	#2710 DIV2k DUP2 NIP ,&digit JSR MUL2 SUB2
+	#03e8 DIV2k DUP2 NIP ,&digit JSR MUL2 SUB2
+	#0064 DIV2k DUP2 NIP ,&digit JSR MUL2 SUB2 NIP
+	#0a DIVk DUP ,&digit JSR MUL SUB
+	,&digit JSR
+	STHr POP
+	#00 .Screen/auto DEO
+JMP2r
+	&digit ( chr -- )
+		#10 ADD #00 SWP #30 SFT2 ;font ADD2 .Screen/addr DEO2
+		OVR2r NIPr STHr .Screen/sprite DEO
+	JMP2r
 
 ( assets )
 
