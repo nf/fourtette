@@ -2,7 +2,9 @@
 
 ( macros )
 
-%MOD { DIVk MUL SUB }
+%MOD   { DIVk MUL SUB }
+%debug { #00 .System/debug DEO }
+%halt  { #81 .System/halt DEO }
 
 ( devices )
 
@@ -155,43 +157,54 @@ JMP2r
 JMP2r
 
 @draw-bg ( -- )
-
-	(
+	;bg/stripes .Screen/addr DEO2
+	#92 .Screen/auto DEO
 	#0000 .Screen/x DEO2
-	#0000 .Screen/y DEO2
-	#83 .Screen/pixel DEO
+	&loop-x
+		.Screen/x DEI2 #0100 GTH2
+			,&loop-done JCN
+		#0000 .Screen/y DEO2
+		&loop-y
+			#03 .Screen/sprite DEO
+			.Screen/y DEI2 #0100 LTH2 
+				,&loop-y JCN
+		.Screen/x DEI2 #0050 ADD2 .Screen/x DEO2
+		,&loop-x JMP
+	&loop-done
+	;bg/dots .Screen/addr DEO2
+	#92 .Screen/auto DEO
 	#0058 .Screen/x DEO2
 	#0038 .Screen/y DEO2
-	#80 .Screen/pixel DEO
-	#00a8 .Screen/x DEO2
-	#0038 .Screen/y DEO2
-	#83 .Screen/pixel DEO
-	#0058 .Screen/x DEO2
-	#00d8 .Screen/y DEO2
-	#83 .Screen/pixel DEO
-	)
+	#00
+	&loop-d
+		INC #01 AND DUP #40 SFT 
+		#03 ORA
+		.Screen/sprite DEO
+		.Screen/y DEI2 #00d8 LTH2
+			,&loop-d JCN
+	POP
 
-	%bg_sprite { #00 SWP .Screen/y DEO2 #00 SWP .Screen/x DEO2 #0a ORA .Screen/sprite DEO }
+	%draw_edge { #00 SWP .Screen/y DEO2 #00 SWP .Screen/x DEO2 .Screen/sprite DEO }
 
 	( corners )
 	;border-chr/corner .Screen/addr DEO2
 	#00 .Screen/auto DEO
-	( tl ) #80 #50 #30 bg_sprite
-	( tr ) #90 #a8 #30 bg_sprite
-	( bl ) #a0 #50 #d8 bg_sprite
-	( br ) #b0 #a8 #d8 bg_sprite
+	( tl ) #8a #50 #30 draw_edge
+	( tr ) #9a #a8 #30 draw_edge
+	( bl ) #aa #50 #d8 draw_edge
+	( br ) #ba #a8 #d8 draw_edge
 
 	( edges )
 	;border-chr/edge-ver .Screen/addr DEO2
 	#91 .Screen/auto DEO
-	( lt ) #80 #50 #38 bg_sprite
-	       #80 #50 #88 bg_sprite
-	( rt ) #90 #a8 #38 bg_sprite
-	       #90 #a8 #88 bg_sprite
+	( lt ) #8a #50 #38 draw_edge
+	       #8a #50 #88 draw_edge
+	( rt ) #9a #a8 #38 draw_edge
+	       #9a #a8 #88 draw_edge
 	;border-chr/edge-hor .Screen/addr DEO2
 	#92 .Screen/auto DEO
-	( tp ) #80 #58 #30 bg_sprite
-	( bt ) #a0 #58 #d8 bg_sprite
+	( tp ) #8a #58 #30 draw_edge
+	( bt ) #aa #58 #d8 draw_edge
 JMP2r
 
 @draw-well ( -- )
@@ -317,6 +330,7 @@ JMP2r
 	&l 4460 0e80 c440 2e00
 	&t 0e40 4c40 4e00 4640
 	&b 6600 6600 6600 6600
+
 @blank-chr
 	ffff ffff ffff ffff
 @block-icn
@@ -333,6 +347,12 @@ JMP2r
 	&edge-hor
 	0000 0000 00ff ffff
 	0000 0000 ff00 0000
+@bg
+	&stripes
+	030c 30c0 030c 30c0
+	e38f 3ef8 e38f 3ef8
+	&dots
+	0008 4000 0020 0100
 
 ( game data )
 
