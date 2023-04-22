@@ -209,7 +209,8 @@ JMP2r
 	.cur each-piece-block
 JMP2r
 	&vec ( well-idx piece -- )
-		piece-well-addr LDAk #fe AND ROT ROT STA
+		piece-well-addr
+		LDAk #fe AND ROT ROT STA
 	JMP2r
 
 @freeze-cur-piece ( -- )
@@ -217,7 +218,8 @@ JMP2r
 	.cur each-piece-block
 JMP2r
 	&vec ( well-idx piece -- )
-		piece-well-addr #02 ROT ROT STA
+		piece-well-addr
+		#02 ROT ROT STA
 	JMP2r
 
 @piece-well-addr ( well-idx piece -- well-addr )
