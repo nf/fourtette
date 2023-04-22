@@ -1,5 +1,9 @@
 ( untitled block game - a wip by nf@wh3rd.net )
 
+( macros )
+
+%MOD { DIVk MUL SUB }
+
 ( devices )
 
 |00 @System     [ &vector $2 &wst      $1 &rst    $1 &pad   $4 &r      $2 &g      $2 &b    $2 &debug  $1 &halt $1 ]
@@ -55,7 +59,7 @@ BRK
 	( inputs )
 	.Controller/button DEI
 	#02 pressed ,&p-b JCN
-		.next/rot LDZ INC #04 DIVk MUL SUB .next/rot STZ
+		.next/rot LDZ INC #04 MOD .next/rot STZ
 		&p-b
 	#40 pressed ,&p-lt JCN
 		.next/x LDZ #01 SUB .next/x STZ
@@ -84,7 +88,7 @@ BRK
 	#00 ( inc-y? )
 	( gravity )
 	.timer/tick LDZ INC
-	.timer/speed LDZ DIVk MUL SUB
+	.timer/speed LDZ MOD
 	DUP .timer/tick STZ
 		,&p-tick JCN
 	INC
@@ -128,7 +132,7 @@ BRK
 	#07 .cur/x STZ
 	#00 .cur/y STZ
 	#00 .cur/rot STZ
-	.cur/type LDZ INC #05 DIVk MUL SUB .cur/type STZ
+	.cur/type LDZ INC #05 MOD .cur/type STZ
 JMP2r
 
 @set-test-pattern ( -- )
@@ -254,7 +258,7 @@ JMP2r
 
 	SWP2 ( piece piece16 well-idx col-count )
 	( col-count %= 4 )
-	#04 DIVk MUL SUB
+	#04 MOD
 	( if col-count == 0, move to next row )
 	SWP OVR ,&inc JCN #0c SUB
 	&inc 
