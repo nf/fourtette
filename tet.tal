@@ -28,11 +28,13 @@
 
 |0000
 
+( the piece controlled by the player )
 @cur  &type $1 &rot $1 &x $1 &y $1 &vec $2
-@next &type $1 &rot $1 &x $1 &y $1 &vec $2 &blocked $1
+( a virtual piece used to cur piece movement )
+@test &type $1 &rot $1 &x $1 &y $1 &vec $2 &blocked $1
 
-@debounce $1
-@timer    &tick $1 &speed $1
+@debounce   $1
+@timer      &tick $1 &speed $1
 @is-compact $1
 
 ( program )
@@ -61,76 +63,85 @@
 BRK
 
 @on-frame ( -> )
+	( compact if we have a reason to )
 	.is-compact LDZ
-		,&no-compact JCN
+		,&p-compact JCN
 	compact-well
-	DUP .is-compact STZ
-		,&no-compact JCN
+	( remember the result, avoid duplicate work )
+	DUP .is-compact STZ 
+		,&p-compact JCN
+	( compcat mutated, so re-set the piece which was wiped )
 	set-cur-piece
-	&no-compact
+	&p-compact
 
-	.cur/type LDZ .next/type STZ
-	.cur/rot LDZ .next/rot STZ
-	.cur/y LDZ .next/y STZ
-	.cur/x LDZ .next/x STZ
+	.cur/type LDZ .test/type STZ
+	.cur/rot LDZ .test/rot STZ
+	.cur/y LDZ .test/y STZ
+	.cur/x LDZ .test/x STZ
 
 	( inputs )
 	.Controller/button DEI
 	#01 pressed ,&p-a JCN
-		.next/rot LDZ #03 ADD #04 MOD .next/rot STZ
+		.test/rot LDZ #03 ADD #04 MOD .test/rot STZ
 		&p-a
 	#02 pressed ,&p-b JCN
-		.next/rot LDZ INC #04 MOD .next/rot STZ
+		.test/rot LDZ INC #04 MOD .test/rot STZ
 		&p-b
 	#40 pressed ,&p-lt JCN
-		.next/x LDZ #01 SUB .next/x STZ
+		.test/x LDZ #01 SUB .test/x STZ
 		&p-lt
 	#80 pressed ,&p-rt JCN
-		.next/x LDZ INC .next/x STZ
+		.test/x LDZ INC .test/x STZ
 		&p-rt 
 	POP
 
 	( test x/rot change )
-	.next/rot LDZ .cur/rot LDZ EQU 
-	.next/x LDZ .cur/x LDZ EQU 
+	.test/rot LDZ .cur/rot LDZ EQU
+	.test/x LDZ .cur/x LDZ EQU
 		AND ,&x-done JCN
-	test-next-piece
+	try-test-piece
 		,&x-blocked JCN
 	unset-cur-piece
-	.next/rot LDZ .cur/rot STZ
-	.next/x LDZ .cur/x STZ
+	.test/rot LDZ .cur/rot STZ
+	.test/x LDZ .cur/x STZ
 	set-cur-piece
 		,&x-done JMP
 	&x-blocked
-	.cur/rot LDZ .next/rot STZ
-	.cur/x LDZ .next/x STZ
+	.cur/rot LDZ .test/rot STZ
+	.cur/x LDZ .test/x STZ
 	&x-done
 
 	#00 ( inc-y? )
+
 	( gravity )
 	.timer/tick LDZ INC
 	.timer/speed LDZ MOD
 	DUP .timer/tick STZ
 		,&p-tick JCN
-	INC
+	INC ( gravity applied )
 	&p-tick
+
 	( down button )
-	.Controller/button DEI #20 AND #20 EOR ,&p-dn JCN
-		INC
+	.Controller/button DEI #20 AND #20 EOR
+		,&p-dn JCN
+	INC ( down button pressed )
 	&p-dn
+
 	( test y change )
 	#01 LTH
 		,&y-done JCN
-	.cur/y LDZ INC .next/y STZ
-	test-next-piece
+	.cur/y LDZ INC .test/y STZ
+	try-test-piece
 		,&y-blocked JCN
 	unset-cur-piece
-	.next/y LDZ .cur/y STZ
+	.test/y LDZ .cur/y STZ
 	set-cur-piece
 		,&y-done JMP
 	&y-blocked
+	( freeze the current piece, create a new piece )
 	freeze-cur-piece
 	new-cur-piece
+	( there are new frozen blocks, compact next frame )
 	#00 .is-compact STZ
 	&y-done
 
@@ -378,14 +389,15 @@ JMP2r
 		#02 ROT ROT STA
 	JMP2r
 
-@test-next-piece ( -- blocked )
-	#00 .next/blocked STZ
-	;&vec .next/vec STZ2
-	.next each-piece-block
-	.next/blocked LDZ
+( reports whether .test can fit )
+@try-test-piece ( -- blocked )
+	#00 .test/blocked STZ
+	;&vec .test/vec STZ2
+	.test each-piece-block
+	.test/blocked LDZ
 JMP2r
 	&vec ( well-addr -- )
-		LDA #02 AND .next/blocked LDZ ORA .next/blocked STZ
+		LDA #02 AND .test/blocked LDZ ORA .test/blocked STZ
 	JMP2r
 
 @each-piece-block ( piece -- )
