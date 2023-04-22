@@ -8,6 +8,8 @@
 
 %well_screen_x { #0058 }
 %well_screen_y { #0040 }
+%next_screen_x { #00b8 }
+%next_screen_y { #00b8 }
 
 %well_line_start { #03 }
 %well_line_end { #0c }
@@ -173,36 +175,61 @@ JMP2r
 	#58 #a8 draw-box 
 
 	( next piece )
-	( #b0 #b0 #30 #30 draw-box )
+	next_screen_x NIP #08 SUB
+	next_screen_y NIP #08 SUB
+	#30 #30 draw-box
 JMP2r
 
 @draw-bg-textures ( -- )
 	;bg/stripes .Screen/addr DEO2
 	#f2 .Screen/auto DEO
 	#0000 .Screen/x DEO2
-	&loop-x
+	&bg-x
 		.Screen/x DEI2 #0100 GTH2
-			,&loop-done JCN
+			,&bg-done JCN
 		#0000 .Screen/y DEO2
-		&loop-y
+		&bg-y
 			#03 .Screen/sprite DEO
 			.Screen/y DEI2 #0100 LTH2 
-				,&loop-y JCN
+				,&bg-y JCN
 		.Screen/x DEI2 #0080 ADD2 .Screen/x DEO2
-		,&loop-x JMP
-	&loop-done
+		,&bg-x JMP
+	&bg-done
 
 	;bg/dots .Screen/addr DEO2
-	#92 .Screen/auto DEO
+	#01 .Screen/auto DEO
 	well_screen_x .Screen/x DEO2
 	well_screen_y .Screen/y DEO2
-	#00
-	&loop-d
-		INC DUP 
-		#01 AND #40 SFT #03 ORA .Screen/sprite DEO
-		DUP #14 LTH
-			,&loop-d JCN
-	POP
+	#00 &well-y
+		INC 
+		DUP #07 MOD #00 EQU #70 SFT 
+		OVR #09 MOD #42 SFT 
+		debug
+		ORA #03 ORA .Screen/sprite DEO
+		DUP #c8 GTH
+			,&well-done JCN
+		DUP #0a MOD
+			,&well-y JCN
+		well_screen_x .Screen/x DEO2
+		.Screen/y DEI2 #0008 ADD2 .Screen/y DEO2
+			,&well-y JMP
+	&well-done POP
+
+	next_screen_x .Screen/x DEO2
+	next_screen_y .Screen/y DEO2
+	#00 &next-y
+		INC 
+		DUP #03 MOD #02 AND #71 SFT 
+		OVR #07 MOD #41 SFT ORA
+		#00 ORA .Screen/sprite DEO
+		DUP #18 GTH
+			,&next-done JCN
+		DUP #05 MOD
+			,&next-y JCN
+		next_screen_x .Screen/x DEO2
+		.Screen/y DEI2 #0008 ADD2 .Screen/y DEO2
+			,&next-y JMP
+	&next-done POP
 JMP2r
 
 @draw-box ( x y w h -- )
@@ -482,7 +509,8 @@ JMP2r
 	030c 30c0 030c 30c0
 	e38f 3ef8 e38f 3ef8
 	&dots
-	0008 4000 0020 0100
+	0000 4000 0000 1000
+	0000 4000 0000 0000
 
 ( game data )
 
