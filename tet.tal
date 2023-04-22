@@ -34,6 +34,8 @@
 @cur  &type $1 &rot $1 &x $1 &y $1 &vec $2
 ( a virtual piece used to cur piece movement )
 @test &type $1 &rot $1 &x $1 &y $1 &vec $2 &blocked $1
+( the next piece to enter the field )
+@next &type $1 &rot $1 &x $1 &y $1 &vec $2
 
 @debounce   $1
 @timer      &tick $1 &speed $1
@@ -62,6 +64,7 @@
 	init-well
 	new-cur-piece
 	set-cur-piece
+	set-next-piece
 BRK
 
 @on-frame ( -> )
@@ -143,11 +146,15 @@ BRK
 	( freeze the current piece, create a new piece )
 	freeze-cur-piece
 	new-cur-piece
+	set-cur-piece
+	set-next-piece
 	( there are new frozen blocks, compact next frame )
 	#00 .is-compact STZ
 	&y-done
 
 	draw-well
+
+	draw-next
 BRK
 
 @on-button ( -> )
@@ -177,7 +184,7 @@ JMP2r
 	( next piece )
 	next_screen_x NIP #08 SUB
 	next_screen_y NIP #08 SUB
-	#30 #30 draw-box
+	#38 #30 draw-box
 JMP2r
 
 @draw-bg-textures ( -- )
@@ -204,7 +211,6 @@ JMP2r
 		INC 
 		DUP #07 MOD #00 EQU #70 SFT 
 		OVR #09 MOD #42 SFT 
-		debug
 		ORA #03 ORA .Screen/sprite DEO
 		DUP #c8 GTH
 			,&well-done JCN
@@ -219,12 +225,12 @@ JMP2r
 	next_screen_y .Screen/y DEO2
 	#00 &next-y
 		INC 
-		DUP #03 MOD #02 AND #71 SFT 
+		DUP #04 MOD #02 AND #71 SFT 
 		OVR #07 MOD #41 SFT ORA
 		#00 ORA .Screen/sprite DEO
-		DUP #18 GTH
+		DUP #1d GTH
 			,&next-done JCN
-		DUP #05 MOD
+		DUP #06 MOD
 			,&next-y JCN
 		next_screen_x .Screen/x DEO2
 		.Screen/y DEI2 #0008 ADD2 .Screen/y DEO2
@@ -282,6 +288,7 @@ JMP2r
 		#08 SUB DUP
 			,&bt-loop JCN
 	POP
+	POP2 POP2
 JMP2r
 
 @init-well ( -- )
@@ -327,6 +334,36 @@ JMP2r
 			well_screen_x .Screen/x DEO2
 			#0008 .Screen/y DEI2 ADD2 .Screen/y DEO2
 			#0005 ADD2
+			,&loop JMP
+	&done POP2
+JMP2r
+
+@draw-next ( -- )
+	next_screen_x .Screen/x DEO2
+	next_screen_y .Screen/y DEO2
+	#01 .Screen/auto DEO
+	;well-next #0001 SUB2 &loop
+		INC2
+		( check eol )
+		DUP #0f AND #04 GTH
+			,&eol JCN
+		( check bottom )
+		DUP #f0 AND #40 GTH
+			,&done JCN
+		( draw blank or block? )
+		DUP2 LDA DUP ,&draw-block JCN
+		&draw-blank
+			;blank-chr .Screen/addr DEO2
+			#40 ORA .Screen/sprite DEO
+				,&loop JMP
+		&draw-block
+			;block-icn .Screen/addr DEO2
+			#c0 ORA .Screen/sprite DEO
+				,&loop JMP
+		&eol
+			next_screen_x .Screen/x DEO2
+			#0008 .Screen/y DEI2 ADD2 .Screen/y DEO2
+			#000a ADD2
 			,&loop JMP
 	&done POP2
 JMP2r
@@ -389,31 +426,35 @@ JMP2r
 	#06 .cur/x STZ
 	#00 .cur/y STZ
 	#00 .cur/rot STZ
-	.cur/type LDZ INC #06 MOD .cur/type STZ
+	.next/type LDZ .cur/type STZ
+
+	#01 .next/x STZ
+	#01 .next/y STZ
+	.next/type LDZ INC #06 MOD .next/type STZ
 JMP2r
 
 @set-cur-piece ( -- )
 	;&vec .cur/vec STZ2
 	.cur each-piece-block
 JMP2r
-	&vec ( well-addr -- )
-		#01 ROT ROT STA
+	&vec ( well-offset -- )
+		;well ADD2 #01 ROT ROT STA
 	JMP2r
 
 @unset-cur-piece ( -- )
 	;&vec .cur/vec STZ2
 	.cur each-piece-block
 JMP2r
-	&vec ( well-addr -- )
-		LDAk #fe AND ROT ROT STA
+	&vec ( well-offset -- )
+		;well ADD2 LDAk #fe AND ROT ROT STA
 	JMP2r
 
 @freeze-cur-piece ( -- )
 	;&vec .cur/vec STZ2
 	.cur each-piece-block
 JMP2r
-	&vec ( well-addr -- )
-		#02 ROT ROT STA
+	&vec ( well-offset -- )
+		;well ADD2 #02 ROT ROT STA
 	JMP2r
 
 ( reports whether .test can fit )
@@ -423,8 +464,22 @@ JMP2r
 	.test each-piece-block
 	.test/blocked LDZ
 JMP2r
-	&vec ( well-addr -- )
-		LDA #02 AND .test/blocked LDZ ORA .test/blocked STZ
+	&vec ( well-offset -- )
+		;well ADD2 LDA #02 AND .test/blocked LDZ ORA .test/blocked STZ
+	JMP2r
+
+@set-next-piece ( -- )
+	;well-next &clear
+		DUP2 #00 ROT ROT STA
+	INC2 DUP2 ;well-next/end LTH2
+		,&clear JCN
+	POP2
+
+	;&vec .next/vec STZ2
+	.next each-piece-block
+JMP2r
+	&vec ( well-offset -- )
+		;well-next ADD2 #01 ROT ROT STA
 	JMP2r
 
 @each-piece-block ( piece -- )
@@ -444,14 +499,13 @@ JMP2r
 	&ok 
 		( stash piece16 and arrange to call piece/vec )
 		STH2 SWP ROT ( col-count well-idx piece )
-		( well-idx piece -- piece well-addr )
+		( well-idx piece -- piece well-offset )
 		DUP2 SWP OVR
 		INC INC INCk LDZ SWP LDZ SWP
 		#00 SWP #0010 MUL2
 		ROT #00 SWP ADD2
-		;well ADD2
 		ROT #00 SWP ADD2
-		( piece well-addr -- well-addr piece/vec )
+		( piece well-offset -- well-offset piece/vec )
 		ROT #04 ADD LDZ2
 		( call piece/vec )
 		JSR2
@@ -485,7 +539,7 @@ JMP2r
 	&s 4620 6c00 4620 6c00
 	&l 4460 0e80 c440 2e00
 	&j 6440 e200 44c0 08e0
-	&t 0e40 4c40 4e00 4640
+	&t 4640 0e40 4c40 4e00
 	&b 6600 6600 6600 6600
 
 @blank-chr
@@ -517,3 +571,4 @@ JMP2r
 |4000
 
 @well $200 &end
+@well-next $40 &end
