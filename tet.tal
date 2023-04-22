@@ -140,8 +140,13 @@ BRK
 		POP #01 JMP2r
 
 @draw-bg ( -- )
+	draw-bg-textures
+	draw-bg-boxes
+JMP2r
+
+@draw-bg-textures ( -- )
 	;bg/stripes .Screen/addr DEO2
-	#92 .Screen/auto DEO
+	#f2 .Screen/auto DEO
 	#0000 .Screen/x DEO2
 	&loop-x
 		.Screen/x DEI2 #0100 GTH2
@@ -151,13 +156,14 @@ BRK
 			#03 .Screen/sprite DEO
 			.Screen/y DEI2 #0100 LTH2 
 				,&loop-y JCN
-		.Screen/x DEI2 #0050 ADD2 .Screen/x DEO2
+		.Screen/x DEI2 #0080 ADD2 .Screen/x DEO2
 		,&loop-x JMP
 	&loop-done
+
 	;bg/dots .Screen/addr DEO2
 	#92 .Screen/auto DEO
-	#0058 .Screen/x DEO2
-	#0038 .Screen/y DEO2
+	#0090 .Screen/x DEO2
+	#0030 .Screen/y DEO2
 	#00
 	&loop-d
 		INC #01 AND DUP #40 SFT 
@@ -166,8 +172,14 @@ BRK
 		.Screen/y DEI2 #00d8 LTH2
 			,&loop-d JCN
 	POP
+JMP2r
 
+@draw-bg-boxes ( -- )
 	%draw_edge { #00 SWP .Screen/y DEO2 #00 SWP .Screen/x DEO2 .Screen/sprite DEO }
+
+	#88 #28 #58 #a8 draw-box 
+
+	JMP2r
 
 	( corners )
 	;border-chr/corner .Screen/addr DEO2
@@ -190,6 +202,58 @@ BRK
 	( bt ) #aa #58 #d8 draw_edge
 JMP2r
 
+@draw-box ( x y w h -- )
+	( corners )
+	;border-chr/corner .Screen/addr DEO2
+	#00 .Screen/auto DEO
+	( tl ) 
+	OVR2 #00 SWP .Screen/y DEO2 #00 SWP .Screen/x DEO2
+	#8a .Screen/sprite DEO
+	( tr )
+	SWP2k SWP2 #ff00 AND2 ADD2 #00 SWP .Screen/y DEO2 #00 SWP .Screen/x DEO2
+	#9a .Screen/sprite DEO
+	( bl )
+	SWP2k SWP2 #00ff AND2 ADD2 #00 SWP .Screen/y DEO2 #00 SWP .Screen/x DEO2
+	#aa .Screen/sprite DEO
+	( br )
+	SWP2k SWP2 ADD2 #00 SWP .Screen/y DEO2 #00 SWP .Screen/x DEO2
+	#ba .Screen/sprite DEO
+
+	( edges )
+	;border-chr/edge-ver .Screen/addr DEO2
+	#02 .Screen/auto DEO
+	( lt )
+	OVR2 #08 ADD #00 SWP .Screen/y DEO2 #00 SWP .Screen/x DEO2
+	DUP #08 SUB &lt-loop
+		#8a .Screen/sprite DEO
+		#08 SUB DUP
+			,&lt-loop JCN
+	POP
+	( rt )
+	SWP2k SWP2 #ff00 AND2 ADD2 #08 ADD #00 SWP .Screen/y DEO2 #00 SWP .Screen/x DEO2
+	DUP #08 SUB &rt-loop
+		#9a .Screen/sprite DEO
+		#08 SUB DUP
+			,&rt-loop JCN
+	POP
+	;border-chr/edge-hor .Screen/addr DEO2
+	#01 .Screen/auto DEO
+	( tp ) 
+	OVR2 #00 SWP .Screen/y DEO2 #08 ADD #00 SWP .Screen/x DEO2
+	OVR #08 SUB &tp-loop
+		#8a .Screen/sprite DEO
+		#08 SUB DUP
+			,&tp-loop JCN
+	POP
+	( bt )
+	SWP2k SWP2 #00ff AND2 ADD2 #00 SWP .Screen/y DEO2 #08 ADD #00 SWP .Screen/x DEO2
+	OVR #08 SUB &bt-loop
+		#aa .Screen/sprite DEO
+		#08 SUB DUP
+			,&bt-loop JCN
+	POP
+JMP2r
+
 @init-well ( -- )
 	;well &loop
 		DUP2 #0ff0 AND2
@@ -204,8 +268,8 @@ JMP2r
 JMP2r
 
 @draw-well ( -- )
-	#0058 .Screen/x DEO2
-	#0038 .Screen/y DEO2
+	#0090 .Screen/x DEO2
+	#0030 .Screen/y DEO2
 	#01 .Screen/auto DEO
 	#0043 ;well ADD2 &loop
 		INC2
@@ -226,7 +290,7 @@ JMP2r
 			#c0 ORA .Screen/sprite DEO
 				,&loop JMP
 		&eol
-			#0058 .Screen/x DEO2
+			#0090 .Screen/x DEO2
 			#0008 .Screen/y DEI2 ADD2 .Screen/y DEO2
 			#0005 ADD2
 			,&loop JMP
