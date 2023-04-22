@@ -6,8 +6,14 @@
 %debug { #00 .System/debug DEO }
 %halt  { #81 .System/halt DEO }
 
-%well_x { #0058 }
-%well_y { #0040 }
+%well_screen_x { #0058 }
+%well_screen_y { #0040 }
+
+%well_line_start { #03 }
+%well_line_end { #0c }
+%well_first_line { #0040 }
+%well_last_line { #0170 }
+%well_first_block_minus_1 { #0042 }
 
 ( devices )
 
@@ -47,11 +53,10 @@
 	#0100 .Screen/height DEO2
 
 	#20 .timer/speed STZ
-	#07 .cur/x STZ
-	#03 .cur/y STZ
 
 	draw-bg
 	init-well
+	new-cur-piece
 	set-cur-piece
 BRK
 
@@ -152,8 +157,8 @@ JMP2r
 
 @draw-bg-boxes ( -- )
 	( main field )
-	well_x NIP #08 SUB 
-	well_y NIP #08 SUB 
+	well_screen_x NIP #08 SUB 
+	well_screen_y NIP #08 SUB 
 	#58 #a8 draw-box 
 
 	( next piece )
@@ -178,8 +183,8 @@ JMP2r
 
 	;bg/dots .Screen/addr DEO2
 	#92 .Screen/auto DEO
-	well_x .Screen/x DEO2
-	well_y .Screen/y DEO2
+	well_screen_x .Screen/x DEO2
+	well_screen_y .Screen/y DEO2
 	#00
 	&loop-d
 		INC DUP 
@@ -243,28 +248,32 @@ JMP2r
 
 @init-well ( -- )
 	;well &loop
-		DUP2 #0ff0 AND2
-		DUP2 #0170 GTH2 ,&skip JCN
-		POP2 DUP2 #000f AND2
-		DUP #04 LTH ,&skip JCN
-		DUP #0d GTH ,&skip JCN
-		POP2 DUP2 #00 ,&set JMP
-		&skip POP2 DUP2 #02 
-		&set ROT ROT STA
-	INC2 DUP2 ;well/end LTH2 ,&loop JCN POP2
+		DUP2 #0ff0 AND2 well_last_line GTH2
+			,&block JCN
+		DUP #0f AND well_line_start LTH
+			,&block JCN
+		DUP #0f AND well_line_end GTH
+			,&block JCN
+		&space #00
+			,&store JMP
+		&block #02
+		&store ROT ROT STAk ROT POP
+		INC2 DUP2 ;well/end LTH2
+			,&loop JCN
+	POP2
 JMP2r
 
 @draw-well ( -- )
-	well_x .Screen/x DEO2
-	well_y .Screen/y DEO2
+	well_screen_x .Screen/x DEO2
+	well_screen_y .Screen/y DEO2
 	#01 .Screen/auto DEO
-	#0043 ;well ADD2 &loop
+	well_first_block_minus_1 ;well ADD2 &loop
 		INC2
 		( check eol )
-		DUP #0f AND #0d GTH
+		DUP #0f AND well_line_end GTH
 			,&eol JCN
 		( check bottom )
-		DUP2 #0ff0 AND2 #0170 GTH2
+		DUP2 #0ff0 AND2 well_last_line GTH2
 			,&done JCN
 		( draw blank or block? )
 		DUP2 LDA DUP ,&draw-block JCN
@@ -277,7 +286,7 @@ JMP2r
 			#c0 ORA .Screen/sprite DEO
 				,&loop JMP
 		&eol
-			well_x .Screen/x DEO2
+			well_screen_x .Screen/x DEO2
 			#0008 .Screen/y DEI2 ADD2 .Screen/y DEO2
 			#0005 ADD2
 			,&loop JMP
@@ -285,13 +294,13 @@ JMP2r
 JMP2r
 
 @compact-well ( -- noop )
-	#00 #0043 ;well ADD2 &loop
+	#00 well_first_block_minus_1 ;well ADD2 &loop
 		INC2
 		( check eol )
-		DUP #0f AND #0d GTH
+		DUP #0f AND well_line_end GTH
 			,&eol JCN
 		( check bottom )
-		DUP2 #0ff0 AND2 #0170 GTH2
+		DUP2 #0ff0 AND2 well_last_line GTH2
 			,&done JCN
 		( sum elements )
 		LDAk OVR2 POP ADD SWP2 NIP ROT
@@ -339,7 +348,7 @@ JMP2r
 JMP2r
 
 @new-cur-piece ( -- )
-	#07 .cur/x STZ
+	#06 .cur/x STZ
 	#00 .cur/y STZ
 	#00 .cur/rot STZ
 	.cur/type LDZ INC #06 MOD .cur/type STZ
