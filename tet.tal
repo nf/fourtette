@@ -111,7 +111,7 @@ BRK
 		,&y-done JMP
 	&y-blocked
 	freeze-cur-piece
-	new-cur
+	new-cur-piece
 	&y-done
 
 	draw-well
@@ -129,32 +129,6 @@ BRK
 		POP #00 JMP2r
 	&no
 		POP #01 JMP2r
-
-@new-cur ( -- )
-	#07 .cur/x STZ
-	#00 .cur/y STZ
-	#00 .cur/rot STZ
-	.cur/type LDZ INC #05 MOD .cur/type STZ
-JMP2r
-
-@set-test-pattern ( -- )
-	;well &loop
-		DUP2 DUP #03 AND ROT ROT STA
-	INC2 DUP2 ;well/end LTH2 ,&loop JCN POP2
-JMP2r
-
-@init-well ( -- )
-	;well &loop
-		DUP2 #0ff0 AND2
-		DUP2 #0170 GTH2 ,&skip JCN
-		POP2 DUP2 #000f AND2
-		DUP #04 LTH ,&skip JCN
-		DUP #0d GTH ,&skip JCN
-		POP2 DUP2 #00 ,&set JMP
-		&skip POP2 DUP2 #02 
-		&set ROT ROT STA
-	INC2 DUP2 ;well/end LTH2 ,&loop JCN POP2
-JMP2r
 
 @draw-bg ( -- )
 	;bg/stripes .Screen/addr DEO2
@@ -207,6 +181,19 @@ JMP2r
 	( bt ) #aa #58 #d8 draw_edge
 JMP2r
 
+@init-well ( -- )
+	;well &loop
+		DUP2 #0ff0 AND2
+		DUP2 #0170 GTH2 ,&skip JCN
+		POP2 DUP2 #000f AND2
+		DUP #04 LTH ,&skip JCN
+		DUP #0d GTH ,&skip JCN
+		POP2 DUP2 #00 ,&set JMP
+		&skip POP2 DUP2 #02 
+		&set ROT ROT STA
+	INC2 DUP2 ;well/end LTH2 ,&loop JCN POP2
+JMP2r
+
 @draw-well ( -- )
 	#0058 .Screen/x DEO2
 	#0038 .Screen/y DEO2
@@ -237,15 +224,12 @@ JMP2r
 	&done POP2
 JMP2r
 
-@test-next-piece ( -- blocked )
-	#00 .next/blocked STZ
-	;&vec .next/vec STZ2
-	.next each-piece-block
-	.next/blocked LDZ
+@new-cur-piece ( -- )
+	#07 .cur/x STZ
+	#00 .cur/y STZ
+	#00 .cur/rot STZ
+	.cur/type LDZ INC #05 MOD .cur/type STZ
 JMP2r
-	&vec ( well-addr -- )
-		LDA #02 AND .next/blocked LDZ ORA .next/blocked STZ
-	JMP2r
 
 @set-cur-piece ( -- )
 	;&vec .cur/vec STZ2
@@ -269,6 +253,16 @@ JMP2r
 JMP2r
 	&vec ( well-addr -- )
 		#02 ROT ROT STA
+	JMP2r
+
+@test-next-piece ( -- blocked )
+	#00 .next/blocked STZ
+	;&vec .next/vec STZ2
+	.next each-piece-block
+	.next/blocked LDZ
+JMP2r
+	&vec ( well-addr -- )
+		LDA #02 AND .next/blocked LDZ ORA .next/blocked STZ
 	JMP2r
 
 @each-piece-block ( piece -- )
