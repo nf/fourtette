@@ -11,8 +11,8 @@
 
 |0000
 
-@cur  &type $1 &rot $1 &x $1 &y $1
-@next &type $1 &rot $1 &x $1 &y $1 &blocked $1
+@cur  &type $1 &rot $1 &x $1 &y $1 &vec $2
+@next &type $1 &rot $1 &x $1 &y $1 &vec $2 &blocked $1
 
 @debounce $1
 @timer    &tick $1 &speed $1
@@ -186,40 +186,45 @@ JMP2r
 
 @test-next-piece ( -- blocked )
 	#00 .next/blocked STZ
-	;test-next-piece-block .next each-piece-block
+	;test-piece-func .next/vec STZ2
+	.next each-piece-block
 	.next/blocked LDZ
 JMP2r
 
-@test-next-piece-block ( well-idx -- )
-	.next pos-to-well-addr LDA #02 AND
-	.next/blocked LDZ ORA .next/blocked STZ
+@test-piece-func ( well-idx piece -- )
+	piece-well-addr
+	LDA #02 AND .next/blocked LDZ ORA .next/blocked STZ
 JMP2r
 
 @set-cur-piece ( -- )
-	;set-cur-piece-block .cur each-piece-block
+	;set-piece-func .cur/vec STZ2
+	.cur each-piece-block
 JMP2r
 
-@set-cur-piece-block ( well-idx -- )
-	#01 SWP .cur pos-to-well-addr STA
+@set-piece-func ( well-idx piece -- )
+	piece-well-addr 
+	#01 ROT ROT STA
 JMP2r
 
 @unset-cur-piece ( -- )
-	;unset-cur-piece-block .cur each-piece-block
+	;unset-piece-func .cur/vec STZ2
+	.cur each-piece-block
 JMP2r
 
-@unset-cur-piece-block ( well-idx -- )
-	.cur pos-to-well-addr LDAk #fe AND ROT ROT STA
+@unset-piece-func ( well-idx piece -- )
+	piece-well-addr LDAk #fe AND ROT ROT STA
 JMP2r
 
 @freeze-cur-piece ( -- )
-	;freeze-cur-piece-block .cur each-piece-block
+	;freeze-piece-func .cur/vec STZ2
+	.cur each-piece-block
 JMP2r
 
-@freeze-cur-piece-block ( well-idx -- )
-	#02 SWP .cur pos-to-well-addr STA
+@freeze-piece-func ( well-idx piece -- )
+	piece-well-addr #02 ROT ROT STA
 JMP2r
 
-@pos-to-well-addr ( well-idx pos -- well-addr )
+@piece-well-addr ( well-idx piece -- well-addr )
 	INC INC INCk LDZ SWP LDZ SWP
 	#00 SWP #0010 MUL2
 	ROT #00 SWP ADD2
@@ -227,27 +232,30 @@ JMP2r
 	ROT #00 SWP ADD2
 JMP2r
 
-@each-piece-block ( block-func pos -- )
+@each-piece-block ( piece -- )
+	DUP
 	LDZk #30 SFT ( type ) 
 	SWP INC LDZ #10 SFT ( rot )
 	ADD #00 SWP 
 	;pieces ADD2 LDA2 ( piece16 )
 	#33 ( go backward from bottom-right )
 	#01 ( col-count, 0-3 )
-	SWP2 ( block-func well-idx col-count piece16 )
+	SWP2 ( piece well-idx col-count piece16 )
 
 	&loop
 
 	( test whether a piece block is at well-idx )
 	DUP #01 AND ,&ok JCN ,&p-ok JMP
 	&ok 
-		( put well-idx on top and call block-func ) 
-		SWP2 ROT2 OVR2 SWP OVR2 JSR2
-		( return stack to previous state )
-		POP SWP2 ROT2
+		( stash piece16 and arrange to call piece/vec )
+		STH2 SWP ROT ( col-count well-idx piece )
+		( call piece/vec with ( well-idx piece ) )
+		DUP2 DUP #04 ADD LDZ2 JSR2
+		( restore stack )
+		SWP ROT ROT STH2r ( piece well-idx col-count piece 16 )
 	&p-ok
 
-	SWP2 ( block-func piece16 well-idx col-count )
+	SWP2 ( piece piece16 well-idx col-count )
 	( col-count %= 4 )
 	#04 DIVk MUL SUB
 	( if col-count == 0, move to next row )
@@ -257,9 +265,9 @@ JMP2r
 	#01 SUB SWP
 	( increment col-count )
 	INC
-	SWP2 ( block-func well-idx col-count piece16 )
+	SWP2 ( piece well-idx col-count piece16 )
 
-	( have we run out of piece blocks to try? )
+	( shift piece16 right, and stop if no more blocks )
 	#01 SFT2 DUP2 #0000 GTH2
 		,&loop JCN
 
