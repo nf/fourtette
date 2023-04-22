@@ -23,7 +23,7 @@
 
 	( theme ) 
 	#0fa5 .System/r DEO2 
-	#0df2 .System/g DEO2 
+	#0df2 .System/g DEO2
 	#0ad9 .System/b DEO2
 
 	( vectors )
@@ -76,11 +76,11 @@ BRK
 	.cur/x LDZ .next/x STZ
 	&x-done
 
-	#00 ( inc-y )
+	#00 ( inc-y? )
 	( gravity )
 	.timer LDZ INC #10 DIVk MUL SUB .timer STZk POP ,&no-gravity JCN
-	INC
-	&no-gravity
+		INC
+		&no-gravity
 	( down button )
 	.Controller/button DEI #20 AND ,&dn JCN ,&p-dn JMP
 		&dn INC
