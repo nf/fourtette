@@ -15,7 +15,7 @@
 @next &type $1 &rot $1 &x $1 &y $1 &blocked $1
 
 @debounce $1
-@timer $1
+@timer    &tick $1 &speed $1
 
 ( program )
 
@@ -34,10 +34,11 @@
 	#0100 .Screen/width DEO2
 	#0100 .Screen/height DEO2
 
-	init-well
-
+	#20 .timer/speed STZ
 	#07 .cur/x STZ
-	#00 .cur/y STZ
+	#03 .cur/y STZ
+
+	init-well
 	set-cur-piece
 BRK
 
@@ -78,7 +79,7 @@ BRK
 
 	#00 ( inc-y? )
 	( gravity )
-	.timer LDZ INC #10 DIVk MUL SUB .timer STZk POP ,&no-gravity JCN
+	.timer/tick LDZ INC .timer/speed LDZ DIVk MUL SUB .timer/tick STZk POP ,&no-gravity JCN
 		INC
 		&no-gravity
 	( down button )
@@ -101,6 +102,10 @@ BRK
 	draw-well
 BRK
 
+@on-button ( -> )
+	.Controller/button DEI .debounce LDZ AND .debounce STZ
+BRK
+
 @pressed ( button code -- nope )
 	DUP2 AND ,&held JCN ,&no JMP 
 	&held
@@ -116,10 +121,6 @@ BRK
 	#00 .cur/rot STZ
 	.cur/type LDZ INC #05 DIVk MUL SUB .cur/type STZ
 JMP2r
-
-@on-button ( -> ) 
-	.Controller/button DEI .debounce LDZ AND .debounce STZ
-BRK
 
 @set-test-pattern ( -- )
 	;well &loop
