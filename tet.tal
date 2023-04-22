@@ -252,7 +252,7 @@ JMP2r
 		( call piece/vec with ( well-idx piece ) )
 		DUP2 DUP #04 ADD LDZ2 JSR2
 		( restore stack )
-		SWP ROT ROT STH2r ( piece well-idx col-count piece 16 )
+		SWP ROT STH2r ( piece well-idx col-count piece 16 )
 	&p-ok
 
 	SWP2 ( piece piece16 well-idx col-count )
@@ -271,7 +271,7 @@ JMP2r
 	#01 SFT2 DUP2 #0000 GTH2
 		,&loop JCN
 
-	POP2 POP2 POP2
+	POP2 POP2 POP
 JMP2r
 
 ( assets )
