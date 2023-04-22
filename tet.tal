@@ -158,6 +158,15 @@ JMP2r
 	#0000 .Screen/x DEO2
 	#0000 .Screen/y DEO2
 	#83 .Screen/pixel DEO
+	#0058 .Screen/x DEO2
+	#0038 .Screen/y DEO2
+	#80 .Screen/pixel DEO
+	#00a8 .Screen/x DEO2
+	#0038 .Screen/y DEO2
+	#83 .Screen/pixel DEO
+	#0058 .Screen/x DEO2
+	#00d8 .Screen/y DEO2
+	#83 .Screen/pixel DEO
 JMP2r
 
 @draw-well ( -- )
@@ -176,11 +185,11 @@ JMP2r
 		DUP2 LDA DUP ,&draw-block JCN
 		&draw-blank
 			;blank-chr .Screen/addr DEO2
-			.Screen/sprite DEO
+			#40 ORA .Screen/sprite DEO
 				,&loop JMP
 		&draw-block
 			;block-icn .Screen/addr DEO2
-			#80 ORA .Screen/sprite DEO
+			#c0 ORA .Screen/sprite DEO
 				,&loop JMP
 		&eol
 			#0058 .Screen/x DEO2
