@@ -52,6 +52,10 @@
 BRK
 
 @on-frame ( -> )
+	compact-well
+		,&no-compact JCN
+	set-cur-piece
+	&no-compact
 
 	.cur/type LDZ .next/type STZ
 	.cur/rot LDZ .next/rot STZ
@@ -222,6 +226,62 @@ JMP2r
 			#0005 ADD2
 			,&loop JMP
 	&done POP2
+JMP2r
+
+@compact-well ( -- noop )
+	#00 #0043 ;well ADD2 &loop
+		INC2
+		( check eol )
+		DUP #0f AND #0d GTH
+			,&eol JCN
+		( check bottom )
+		DUP2 #0ff0 AND2 #0170 GTH2
+			,&done JCN
+		( sum elements )
+		LDAk OVR2 POP ADD SWP2 NIP ROT
+			,&loop JMP
+		&eol
+			ROT
+			DUP #14 EQU
+				,&hl-line JCN
+			DUP #28 EQU
+				,&rem-line JCN
+			POP
+			&eol-done
+				#00 ROT ROT
+				#0005 ADD2
+				,&loop JMP
+			&hl-line 
+				POP
+				DUP2 #000a SUB2
+				&hl-block
+					DUP2 #04 ROT ROT STA
+					INC2 GTH2k
+						,&hl-block JCN
+				POP2
+				,&eol-done JMP
+			&rem-line
+				POP
+				DUP2 remove-well-line
+				POP2 #00
+				JMP2r
+	&done POP2 POP #01
+JMP2r
+
+@remove-well-line ( well-addr-on-line -- )
+	#fff0 AND2 #0010 ADD2
+	&loop
+		#0001 SUB2
+		( read block from line above )
+		DUP2k #0010 SUB2 LDA
+		( exclude current piece )
+		#fe AND 
+		( store block in current line )
+		ROT ROT STA
+		( see if we're done )
+		DUP2 #0fff AND2 #0010 GTH2
+			,&loop JCN
+	POP2
 JMP2r
 
 @new-cur-piece ( -- )
