@@ -155,6 +155,8 @@ JMP2r
 JMP2r
 
 @draw-bg ( -- )
+
+	(
 	#0000 .Screen/x DEO2
 	#0000 .Screen/y DEO2
 	#83 .Screen/pixel DEO
@@ -167,6 +169,29 @@ JMP2r
 	#0058 .Screen/x DEO2
 	#00d8 .Screen/y DEO2
 	#83 .Screen/pixel DEO
+	)
+
+	%bg_sprite { #00 SWP .Screen/y DEO2 #00 SWP .Screen/x DEO2 #0a ORA .Screen/sprite DEO }
+
+	( corners )
+	;border-chr/corner .Screen/addr DEO2
+	#00 .Screen/auto DEO
+	( tl ) #80 #50 #30 bg_sprite
+	( tr ) #90 #a8 #30 bg_sprite
+	( bl ) #a0 #50 #d8 bg_sprite
+	( br ) #b0 #a8 #d8 bg_sprite
+
+	( edges )
+	;border-chr/edge-ver .Screen/addr DEO2
+	#91 .Screen/auto DEO
+	( lt ) #80 #50 #38 bg_sprite
+	       #80 #50 #88 bg_sprite
+	( rt ) #90 #a8 #38 bg_sprite
+	       #90 #a8 #88 bg_sprite
+	;border-chr/edge-hor .Screen/addr DEO2
+	#92 .Screen/auto DEO
+	( tp ) #80 #58 #30 bg_sprite
+	( bt ) #a0 #58 #d8 bg_sprite
 JMP2r
 
 @draw-well ( -- )
@@ -297,6 +322,17 @@ JMP2r
 @block-icn
 	7e81 8181 8181 817f
 	007f 7f7f 7f7f 7f7f
+
+@border-chr
+	&corner
+	0000 0000 0003 0707
+	0000 0000 0304 0808
+	&edge-ver
+	0707 0707 0707 0707
+	0808 0808 0808 0808
+	&edge-hor
+	0000 0000 00ff ffff
+	0000 0000 ff00 0000
 
 ( game data )
 
