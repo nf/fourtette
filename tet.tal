@@ -406,7 +406,9 @@ JMP2r
 JMP2r
 
 @compact-well ( -- noop )
-	#00 well_first_block_minus_1 ;well ADD2 &loop
+	#00 ,&line-sum STR
+	well_first_block_minus_1 ;well ADD2
+	&loop
 		INC2
 		( check eol )
 		DUP #0f AND well_line_end GTH
@@ -415,20 +417,17 @@ JMP2r
 		DUP2 #0ff0 AND2 well_last_line GTH2
 			,&done JCN
 		( sum elements )
-		LDAk OVR2 POP ADD SWP2 NIP ROT
+		LDAk [ LIT &line-sum $1 ] ADD ,&line-sum STR
 			,&loop JMP
 		&eol
-			ROT
-			DUP #14 EQU
+			,&line-sum LDR #14 EQU
 				,&hl-line JCN
-			DUP #28 EQU
+			,&line-sum LDR #28 EQU
 				,&rem-line JCN
-			POP
-			#00 ROT ROT
+			#00 ,&line-sum STR
 			#0005 ADD2
 				,&loop JMP
 			&hl-line 
-				POP
 				DUP2 #000a SUB2
 				&hl-block
 					DUP2 #04 ROT ROT STA
@@ -437,12 +436,11 @@ JMP2r
 				POP2 POP2 #00
 				JMP2r
 			&rem-line
-				POP
 				remove-well-line
 				.score/lines LDZ2 INC2 .score/lines STZ2
 				#00
 				JMP2r
-	&done POP2 POP #01
+	&done POP2 #01
 JMP2r
 
 @remove-well-line ( well-addr-on-line -- )
