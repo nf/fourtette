@@ -78,10 +78,11 @@ BRK
 	( remember the result, avoid duplicate work )
 	DUP ,&is-compact STR 
 		,&p-compact JCN
-	( compcat mutated, so re-set the piece which was wiped )
+	( compact mutated, so re-set the piece which was wiped )
 	set-cur-piece
 	&p-compact
 
+	( copy cur to test )
 	.cur/type LDZ .test/type STZ
 	.cur/rot LDZ .test/rot STZ
 	.cur/y LDZ .test/y STZ
@@ -107,16 +108,7 @@ BRK
 	.test/rot LDZ .cur/rot LDZ EQU
 	.test/x LDZ .cur/x LDZ EQU
 		AND ,&x-done JCN
-	try-test-piece
-		,&x-blocked JCN
-	unset-cur-piece
-	.test/rot LDZ .cur/rot STZ
-	.test/x LDZ .cur/x STZ
-	set-cur-piece
-		,&x-done JMP
-	&x-blocked
-	.cur/rot LDZ .test/rot STZ
-	.cur/x LDZ .test/x STZ
+	try-test-piece POP
 	&x-done
 
 	#00 ,&inc-y STR
@@ -136,16 +128,11 @@ BRK
 	&no-down
 
 	( test y change )
-	[ LIT &inc-y $1 ] #00 EQU
-		,&y-done JCN
-	.cur/y LDZ INC .test/y STZ
+	[ LIT &inc-y $1 ]
+		#00 EQU ,&y-done JCN
+	.test/y LDZ INC .test/y STZ
 	try-test-piece
-		,&y-blocked JCN
-	unset-cur-piece
-	.test/y LDZ .cur/y STZ
-	set-cur-piece
-		,&y-done JMP
-	&y-blocked
+		#00 EQU ,&y-done JCN
 	( freeze the current piece, create a new piece )
 	freeze-cur-piece
 	new-cur-piece
@@ -498,14 +485,28 @@ JMP2r
 		;well ADD2 #02 ROT ROT STA
 	JMP2r
 
-( reports whether test can fit in well )
+( tries to move cur to test, reports whether it failed )
 @try-test-piece ( -- blocked )
-	#00 .test/blocked STZ
+	#00 ,&blocked STR
 	.test ;&each each-piece-block
-	.test/blocked LDZ
+	[ LIT &blocked $1 ]
+		,&is-blocked JCN
+	unset-cur-piece
+	.test/rot LDZ .cur/rot STZ
+	.test/x   LDZ .cur/x   STZ
+	.test/y   LDZ .cur/y   STZ
+	set-cur-piece
+	#00 
+JMP2r
+	&is-blocked
+	.cur/rot LDZ .test/rot STZ
+	.cur/x   LDZ .test/x   STZ
+	.cur/y   LDZ .test/y   STZ
+	#01
 JMP2r
 	&each ( well-offset -- )
-		;well ADD2 LDA #02 AND .test/blocked LDZ ORA .test/blocked STZ
+		;well ADD2 LDA #02 AND
+		,&blocked LDR ORA ,&blocked STR
 	JMP2r
 
 @set-next-piece ( -- )
