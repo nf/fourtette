@@ -3,7 +3,7 @@
 ( macros )
 
 %MOD   { DIVk MUL SUB }
-%debug { #00 .System/debug DEO }
+%debug { #f4 .System/debug DEO }
 %halt  { #81 .System/halt DEO }
 
 %well_screen_x { #0058 }
@@ -31,6 +31,8 @@
 ( variables )
 
 |0000
+
+|0010
 
 ( the piece controlled by the player )
 @cur  &type $1 &rot $1 &x $1 &y $1 &vec $2
@@ -528,55 +530,55 @@ JMP2r
 		;well-next ADD2 #01 ROT ROT STA
 	JMP2r
 
-@each-piece-block ( piece -- )
-	DUP
+@piece-bits ( piece -- piece-bits* )
 	LDZk #30 SFT ( type ) 
 	SWP INC LDZ #10 SFT ( rot )
-	ADD #00 SWP 
+	ADD #00 SWP
 	;pieces ADD2 LDA2 ( piece16 )
-	#33 ( go backward from bottom-right )
-	#01 ( col-count, 0-3 )
-	SWP2 ( piece well-idx col-count piece16 )
+JMP2r
+
+@piece-offset ( piece -- offset* )
+	INC INC INCk LDZ #00 SWP #0010 MUL2 ( y* )
+	ROT LDZ #00 SWP ( x* )
+	ADD2
+JMP2r
+
+@each-piece-block ( piece -- )
+	DUP DUP ,&piece STR
+	piece-bits ,&piece16 STR2
+	piece-offset ,&piece-offs STR2
+	( go backward from bottom-right )
+	#33 ,&well-idx STR
+	( count piece bit columns 0-3 )
+	#00 ,&col-count STR 
 
 	&loop
-
 	( test whether a piece block is at well-idx )
-	DUP #01 AND ,&ok JCN ,&p-ok JMP
-	&ok 
-		( stash piece16 and arrange to call piece/vec )
-		STH2 SWP ROT ( col-count well-idx piece )
-		( well-idx piece -- piece well-offset )
-		DUP2 SWP OVR
-		INC INC INCk LDZ SWP LDZ SWP
-		#00 SWP #0010 MUL2
-		ROT #00 SWP ADD2
-		ROT #00 SWP ADD2
-		( piece well-offset -- well-offset piece/vec )
-		ROT #04 ADD LDZ2
-		( call piece/vec )
+	,&piece16 LDR2 NIP #01 AND #01 EOR ,&nope JCN
+		,&piece-offs LDR2 #00 ,&well-idx LDR ADD2
+		,&piece LDR #04 ADD LDZ2 ( piece/vec )
 		JSR2
-		( restore stack )
-		SWP ROT STH2r ( piece well-idx col-count piece16 )
-	&p-ok
+	&nope
 
-	SWP2 ( piece piece16 well-idx col-count )
-	( col-count %= 4 )
-	#04 MOD
-	( if col-count == 0, move to next row )
-	SWP OVR ,&inc JCN #0c SUB
-	&inc 
-	( decrement well-idx )
-	#01 SUB SWP
-	( increment col-count )
-	INC
-	SWP2 ( piece well-idx col-count piece16 )
+	,&well-idx LDR
+	,&col-count LDR INC #04 MOD DUP ,&col-count STR
+		,&next-col JCN
+	#0c SUB
+	&next-col
+	#01 SUB
+	,&well-idx STR
 
-	( shift piece16 right, and stop if no more blocks )
-	#01 SFT2 DUP2 #0000 GTH2
+	( shift piece16 right )
+	,&piece16 LDR2 #01 SFT2 DUP2 ,&piece16 STR2
+	( continue if there are more blocks )
+	#0000 GTH2
 		,&loop JCN
-
-	POP2 POP2 POP
 JMP2r
+	[ LIT &piece $1 ]
+	[ LIT &piece16 $2 ]
+	[ LIT &piece-offs $2 ]
+	[ LIT &well-idx $1 ]
+	[ LIT &col-count $1 ] 
 
 @draw-str ( x* y* text* color -- )
 
