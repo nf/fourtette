@@ -55,7 +55,7 @@
 
 	( vectors )
 	;on-frame .Screen/vector DEO2
-	;on-button .Controller/vector DEO2
+	;button/vector .Controller/vector DEO2
 
 	( resize )
 	#0100 .Screen/width DEO2
@@ -87,16 +87,16 @@ BRK
 	.cur/x LDZ .test/x STZ
 
 	( inputs )
-	#01 pressed ,&p-a JCN
+	#01 button/pressed ,&p-a JCN
 		.test/rot LDZ #03 ADD #04 MOD .test/rot STZ
 		&p-a
-	#02 pressed ,&p-b JCN
+	#02 button/pressed ,&p-b JCN
 		.test/rot LDZ INC #04 MOD .test/rot STZ
 		&p-b
-	#40 pressed ,&p-lt JCN
+	#40 button/pressed ,&p-lt JCN
 		.test/x LDZ #01 SUB .test/x STZ
 		&p-lt
-	#80 pressed ,&p-rt JCN
+	#80 button/pressed ,&p-rt JCN
 		.test/x LDZ INC .test/x STZ
 		&p-rt 
 
@@ -118,7 +118,7 @@ BRK
 	&no-tick
 
 	( down button )
-	.Controller/button DEI #20 AND #20 EOR
+	#20 button/held
 		,&no-down JCN
 	#01 ,&inc-y STR
 	&no-down
@@ -143,24 +143,27 @@ BRK
 	draw-score
 BRK
 
-@on-button ( -> )
+@button
+	[ LIT &state $1 ]
+&vector
 	.Controller/button DEI DUP
 	,&state STR
 	[ LIT &debounce $1 ] AND ,&debounce STR
 BRK
-	[ LIT &state $1 ]
-
-@pressed ( code -- not-pressed )
-	DUP ,on-button/state LDR AND
-		,&held JCN
-	&no
+&held ( code -- not-held )
+	DUP ,&state LDR AND EOR
+JMP2r
+&pressed ( code -- not-pressed )
+	DUP ,&state LDR AND
+		,&pressed-debounce JCN
+	&not-pressed
 	POP #01
 JMP2r
-	&held
-	DUP ,on-button/debounce LDR AND
-		,&no JCN
-	,on-button/debounce LDR ORA 
-	,on-button/debounce STR
+&pressed-debounce
+	DUP
+	,&debounce LDR AND
+		,&not-pressed JCN
+	,&debounce LDR ORA ,&debounce STR
 	#00
 JMP2r
 
