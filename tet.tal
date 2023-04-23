@@ -182,19 +182,19 @@ JMP2r
 
 @draw-bg-boxes ( -- )
 	( main field )
-	well_screen_x NIP #08 SUB 
-	well_screen_y NIP #08 SUB 
-	#58 #a8 #0a draw-box 
+	well_screen_x #0008 SUB2
+	well_screen_y #0008 SUB2
+	#0058 #00a8 #0a draw-box 
 
 	( next piece )
-	next_screen_x NIP #08 SUB
-	next_screen_y NIP #08 SUB
-	#38 #30 #05 draw-box
+	next_screen_x #0008 SUB2
+	next_screen_y #0008 SUB2
+	#0038 #0030 #05 draw-box
 
 	( score )
-	score_screen_x NIP #08 SUB
-	score_screen_y NIP #08 SUB
-	#38 #28 #0f draw-box
+	score_screen_x #0008 SUB2
+	score_screen_y #0008 SUB2
+	#0038 #0028 #0f draw-box
 JMP2r
 
 @draw-bg-textures ( -- )
@@ -264,60 +264,54 @@ JMP2r
 JMP2r
 
 @draw-box ( x y w h col -- )
-	STH
+	,&col STR ,&h STR2 ,&w STR2 ,&y STR2 ,&x STR2
+	,&draw JMP
+	[ LIT2 &w $2 ]
+	[ LIT2 &h $2 ]
+	&set-x ( offset* -- )
+		[ LIT2 &x $2 ] ADD2 .Screen/x DEO2
+	JMP2r
+	&set-y ( offset* -- )
+		[ LIT2 &y $2 ] ADD2 .Screen/y DEO2
+	JMP2r
+	&put ( flags -- )
+		[ LIT &col $1 ] ORA .Screen/sprite DEO
+	JMP2r
+	&puts ( flags n -- )
+		OVR ,&put JSR
+		#08 SUB DUP ?&puts
+		POP2
+	JMP2r
+	&draw
 
 	( corners )
+
 	;border-chr/corner .Screen/addr DEO2
 	#00 .Screen/auto DEO
-	( tl ) 
-	OVR2 #00 SWP .Screen/y DEO2 #00 SWP .Screen/x DEO2
-	#80 STHkr ORA .Screen/sprite DEO
-	( tr )
-	SWP2k SWP2 #ff00 AND2 ADD2 #00 SWP .Screen/y DEO2 #00 SWP .Screen/x DEO2
-	#90 STHkr ORA .Screen/sprite DEO
-	( bl )
-	SWP2k SWP2 #00ff AND2 ADD2 #00 SWP .Screen/y DEO2 #00 SWP .Screen/x DEO2
-	#a0 STHkr ORA .Screen/sprite DEO
-	( br )
-	SWP2k SWP2 ADD2 #00 SWP .Screen/y DEO2 #00 SWP .Screen/x DEO2
-	#b0 STHkr ORA .Screen/sprite DEO
+	( tl ) #0000 ;&set-x JSR2 #0000 ;&set-y JSR2 #80 ;&put JSR2
+	( tr ) ;&w LDA2 ;&set-x JSR2 #90 ;&put JSR2
+	( br ) ;&h LDA2 ;&set-y JSR2 #b0 ;&put JSR2
+	( bl ) #0000 ;&set-x JSR2 #a0 ;&put JSR2
 
 	( edges )
+
 	;border-chr/edge-ver .Screen/addr DEO2
 	#02 .Screen/auto DEO
-	( lt )
-	OVR2 #08 ADD #00 SWP .Screen/y DEO2 #00 SWP .Screen/x DEO2
-	DUP #08 SUB &lt-loop
-		#80 STHkr ORA .Screen/sprite DEO
-		#08 SUB DUP
-			,&lt-loop JCN
-	POP
-	( rt )
-	SWP2k SWP2 #ff00 AND2 ADD2 #08 ADD #00 SWP .Screen/y DEO2 #00 SWP .Screen/x DEO2
-	DUP #08 SUB &rt-loop
-		#90 STHkr ORA .Screen/sprite DEO
-		#08 SUB DUP
-			,&rt-loop JCN
-	POP
+	( left )
+	#0000 ;&set-x JSR2 #0008 ;&set-y JSR2
+	#80 ;&h LDA2 NIP #08 SUB ;&puts JSR2
+	( right )
+	;&w LDA2 ;&set-x JSR2 #0008 ;&set-y JSR2
+	#90 ;&h LDA2 NIP #08 SUB ;&puts JSR2
+
 	;border-chr/edge-hor .Screen/addr DEO2
 	#01 .Screen/auto DEO
-	( tp ) 
-	OVR2 #00 SWP .Screen/y DEO2 #08 ADD #00 SWP .Screen/x DEO2
-	OVR #08 SUB &tp-loop
-		#80 STHkr ORA .Screen/sprite DEO
-		#08 SUB DUP
-			,&tp-loop JCN
-	POP
-	( bt )
-	SWP2k SWP2 #00ff AND2 ADD2 #00 SWP .Screen/y DEO2 #08 ADD #00 SWP .Screen/x DEO2
-	OVR #08 SUB &bt-loop
-		#a0 STHkr ORA .Screen/sprite DEO
-		#08 SUB DUP
-			,&bt-loop JCN
-	POP
-	POP2 POP2
-
-	STHr POP
+	( top ) 
+	#0008 ;&set-x JSR2 #0000 ;&set-y JSR2
+	#80 ;&w LDA2 NIP #08 SUB ;&puts JSR2
+	( bottom )
+	#0008 ;&set-x JSR2 ;&h LDA2 ;&set-y JSR2
+	#a0 ;&w LDA2 NIP #08 SUB ;&puts JSR2
 JMP2r
 
 @init-well ( -- )
