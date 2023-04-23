@@ -37,11 +37,9 @@
 ( the piece controlled by the player )
 @cur  &type $1 &rot $1 &x $1 &y $1
 ( a virtual piece used to cur piece movement )
-@test &type $1 &rot $1 &x $1 &y $1 &blocked $1
+@test &type $1 &rot $1 &x $1 &y $1
 ( the next piece to enter the field )
 @next &type $1 &rot $1 &x $1 &y $1
-
-@debounce   $1
 
 @score
 	&lines $2
@@ -89,7 +87,6 @@ BRK
 	.cur/x LDZ .test/x STZ
 
 	( inputs )
-	.Controller/button DEI
 	#01 pressed ,&p-a JCN
 		.test/rot LDZ #03 ADD #04 MOD .test/rot STZ
 		&p-a
@@ -102,7 +99,6 @@ BRK
 	#80 pressed ,&p-rt JCN
 		.test/x LDZ INC .test/x STZ
 		&p-rt 
-	POP
 
 	( test x/rot change )
 	.test/rot LDZ .cur/rot LDZ EQU
@@ -148,17 +144,25 @@ BRK
 BRK
 
 @on-button ( -> )
-	.Controller/button DEI .debounce LDZ AND .debounce STZ
+	.Controller/button DEI DUP
+	,&state STR
+	[ LIT &debounce $1 ] AND ,&debounce STR
 BRK
+	[ LIT &state $1 ]
 
-@pressed ( button code -- not-pressed )
-	DUP2 AND ,&held JCN ,&no JMP 
-	&held
-		DUP .debounce LDZ AND ,&no JCN
-		DUP .debounce LDZ ORA .debounce STZ
-		POP #00 JMP2r
+@pressed ( code -- not-pressed )
+	DUP ,on-button/state LDR AND
+		,&held JCN
 	&no
-		POP #01 JMP2r
+	POP #01
+JMP2r
+	&held
+	DUP ,on-button/debounce LDR AND
+		,&no JCN
+	,on-button/debounce LDR ORA 
+	,on-button/debounce STR
+	#00
+JMP2r
 
 @draw-bg ( -- )
 	draw-bg-textures
