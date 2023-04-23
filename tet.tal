@@ -35,11 +35,11 @@
 |0010
 
 ( the piece controlled by the player )
-@cur  &type $1 &rot $1 &x $1 &y $1 &vec $2
+@cur  &type $1 &rot $1 &x $1 &y $1
 ( a virtual piece used to cur piece movement )
-@test &type $1 &rot $1 &x $1 &y $1 &vec $2 &blocked $1
+@test &type $1 &rot $1 &x $1 &y $1 &blocked $1
 ( the next piece to enter the field )
-@next &type $1 &rot $1 &x $1 &y $1 &vec $2
+@next &type $1 &rot $1 &x $1 &y $1
 
 @debounce   $1
 @timer      &tick $1 &speed $1
@@ -482,37 +482,33 @@ JMP2r
 JMP2r
 
 @set-cur-piece ( -- )
-	;&vec .cur/vec STZ2
-	.cur each-piece-block
+	.cur ;&each each-piece-block
 JMP2r
-	&vec ( well-offset -- )
+	&each ( well-offset -- )
 		;well ADD2 #01 ROT ROT STA
 	JMP2r
 
 @unset-cur-piece ( -- )
-	;&vec .cur/vec STZ2
-	.cur each-piece-block
+	.cur ;&each each-piece-block
 JMP2r
-	&vec ( well-offset -- )
+	&each ( well-offset -- )
 		;well ADD2 LDAk #fe AND ROT ROT STA
 	JMP2r
 
 @freeze-cur-piece ( -- )
-	;&vec .cur/vec STZ2
-	.cur each-piece-block
+	.cur ;&each each-piece-block
 JMP2r
-	&vec ( well-offset -- )
+	&each ( well-offset -- )
 		;well ADD2 #02 ROT ROT STA
 	JMP2r
 
-( reports whether .test can fit )
+( reports whether test can fit in well )
 @try-test-piece ( -- blocked )
 	#00 .test/blocked STZ
-	;&vec .test/vec STZ2
-	.test each-piece-block
+	.test ;&each each-piece-block
 	.test/blocked LDZ
 JMP2r
-	&vec ( well-offset -- )
+	&each ( well-offset -- )
 		;well ADD2 LDA #02 AND .test/blocked LDZ ORA .test/blocked STZ
 	JMP2r
 
@@ -522,11 +518,9 @@ JMP2r
 	INC2 DUP2 ;well-next/end LTH2
 		,&clear JCN
 	POP2
-
-	;&vec .next/vec STZ2
-	.next each-piece-block
+	.next ;&each each-piece-block
 JMP2r
-	&vec ( well-offset -- )
+	&each ( well-offset -- )
 		;well-next ADD2 #01 ROT ROT STA
 	JMP2r
 
@@ -543,42 +537,38 @@ JMP2r
 	ADD2
 JMP2r
 
-@each-piece-block ( piece -- )
-	DUP DUP ,&piece STR
-	piece-bits ,&piece16 STR2
-	piece-offset ,&piece-offs STR2
-	( go backward from bottom-right )
-	#33 ,&well-idx STR
-	( count piece bit columns 0-3 )
-	#00 ,&col-count STR 
+@each-piece-block ( piece each-func* -- )
+	,&each-func STR2
+	DUP piece-bits ,&pbits STR2
+	    piece-offset ,&poffs STR2
+	( go backward from bottom-right, as we
+	  consume pbits least-to-most significant )
+	#33 ,&woffs STR
+	#00 ,&col STR ( 0-3 )
 
 	&loop
-	( test whether a piece block is at well-idx )
-	,&piece16 LDR2 NIP #01 AND #01 EOR ,&nope JCN
-		,&piece-offs LDR2 #00 ,&well-idx LDR ADD2
-		,&piece LDR #04 ADD LDZ2 ( piece/vec )
+	( test whether a piece block is at woffs )
+	[ LIT2 &pbits $2 ] NIP #01 AND #01 EOR ,&nope JCN
+		[ LIT2 &poffs $2 ] #00 ,&woffs LDR ADD2
+		[ LIT2 &each-func $2 ] 
 		JSR2
 	&nope
 
-	,&well-idx LDR
-	,&col-count LDR INC #04 MOD DUP ,&col-count STR
-		,&next-col JCN
-	#0c SUB
-	&next-col
+	[ LIT &woffs $1 ]
+	[ LIT &col $1 ] INC #04 MOD DUP ,&col STR
+		,&same-row JCN
+	( next row )
+	#0c SUB 
+	&same-row
 	#01 SUB
-	,&well-idx STR
+	,&woffs STR
 
-	( shift piece16 right )
-	,&piece16 LDR2 #01 SFT2 DUP2 ,&piece16 STR2
+	( shift pbits right )
+	,&pbits LDR2 #01 SFT2 DUP2 ,&pbits STR2
 	( continue if there are more blocks )
 	#0000 GTH2
 		,&loop JCN
 JMP2r
-	[ LIT &piece $1 ]
-	[ LIT &piece16 $2 ]
-	[ LIT &piece-offs $2 ]
-	[ LIT &well-idx $1 ]
-	[ LIT &col-count $1 ] 
 
 @draw-str ( x* y* text* color -- )
 
