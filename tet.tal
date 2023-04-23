@@ -42,8 +42,6 @@
 @next &type $1 &rot $1 &x $1 &y $1
 
 @debounce   $1
-@timer      &tick $1 &speed $1
-@is-compact $1
 
 @score
 	&lines $2
@@ -65,8 +63,6 @@
 	#0100 .Screen/width DEO2
 	#0100 .Screen/height DEO2
 
-	#20 .timer/speed STZ
-
 	draw-bg
 	init-well
 	new-cur-piece
@@ -76,11 +72,11 @@ BRK
 
 @on-frame ( -> )
 	( compact if we have a reason to )
-	.is-compact LDZ
+	[ LIT &is-compact $1 ]
 		,&p-compact JCN
 	compact-well
 	( remember the result, avoid duplicate work )
-	DUP .is-compact STZ 
+	DUP ,&is-compact STR 
 		,&p-compact JCN
 	( compcat mutated, so re-set the piece which was wiped )
 	set-cur-piece
@@ -123,24 +119,24 @@ BRK
 	.cur/x LDZ .test/x STZ
 	&x-done
 
-	#00 ( inc-y? )
+	#00 ,&inc-y STR
 
 	( gravity )
-	.timer/tick LDZ INC
-	.timer/speed LDZ MOD
-	DUP .timer/tick STZ
-		,&p-tick JCN
-	INC ( gravity applied )
-	&p-tick
+	[ LIT &tick $1 ] INC
+	#20 MOD
+	DUP ,&tick STR
+		,&no-tick JCN
+	#01 ,&inc-y STR
+	&no-tick
 
 	( down button )
 	.Controller/button DEI #20 AND #20 EOR
-		,&p-dn JCN
-	INC ( down button pressed )
-	&p-dn
+		,&no-down JCN
+	#01 ,&inc-y STR
+	&no-down
 
 	( test y change )
-	#01 LTH
+	[ LIT &inc-y $1 ] #00 EQU
 		,&y-done JCN
 	.cur/y LDZ INC .test/y STZ
 	try-test-piece
@@ -156,7 +152,7 @@ BRK
 	set-cur-piece
 	set-next-piece
 	( there are new frozen blocks, compact next frame )
-	#00 .is-compact STZ
+	#00 ;&is-compact STA
 	&y-done
 
 	draw-well
