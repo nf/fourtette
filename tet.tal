@@ -69,6 +69,9 @@
 BRK
 
 @on-frame ( -> )
+	[ LIT &is-dead $1 ]
+		?&draw
+
 	( compact if we have a reason to )
 	[ LIT &is-compact $1 ]
 		?&p-compact
@@ -81,10 +84,7 @@ BRK
 	&p-compact
 
 	( copy cur to test )
-	.cur/type LDZ .test/type STZ
-	.cur/rot LDZ .test/rot STZ
-	.cur/y LDZ .test/y STZ
-	.cur/x LDZ .test/x STZ
+	copy-cur-to-test
 
 	( inputs )
 	#01 button/pressed ?&p-a
@@ -125,19 +125,27 @@ BRK
 
 	( test y change )
 	[ LIT &inc-y $1 ]
-		#00 EQU ?&y-done
+		#00 EQU ?&draw
 	.test/y LDZ INC .test/y STZ
 	try-test-piece
-		#00 EQU ?&y-done
+		#00 EQU ?&draw
 	( freeze the current piece, create a new piece )
 	freeze-cur-piece
 	new-cur-piece
+	( check if the new piece fits in the well, if not we died )
+	copy-cur-to-test
+	try-test-piece
+		?&dead
 	set-cur-piece
 	set-next-piece
 	( there are new frozen blocks, compact next frame )
 	#00 ;&is-compact STA
-	&y-done
+	!&draw
 
+	&dead
+	#01 ;&is-dead STA
+
+	&draw
 	draw-well
 	draw-next
 	draw-score
@@ -235,6 +243,13 @@ JMP2r
 		DUP2 #0fff AND2 #0010 GTH2
 			?&loop
 	POP2
+JMP2r
+
+@copy-cur-to-test
+	.cur/type LDZ .test/type STZ
+	.cur/rot LDZ .test/rot STZ
+	.cur/y LDZ .test/y STZ
+	.cur/x LDZ .test/x STZ
 JMP2r
 
 @new-cur-piece ( -- )
