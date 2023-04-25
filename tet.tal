@@ -47,7 +47,6 @@
 ( program )
 
 |0100 ( -> )
-
 	( theme ) 
 	#0ea5 .System/r DEO2 
 	#0cf2 .System/g DEO2
@@ -455,19 +454,20 @@ JMP2r
 
 @draw-bg-boxes ( -- )
 	( main field )
-	well_screen_x #0008 SUB2
-	well_screen_y #0008 SUB2
-	#0058 #00a8 #0a draw-box 
+	
+	well_screen_x .Screen/x DEO2
+	well_screen_y .Screen/y DEO2
+	#50 #a0 #0a draw-box 
 
 	( next piece )
-	next_screen_x #0008 SUB2
-	next_screen_y #0008 SUB2
-	#0038 #0030 #05 draw-box
+	next_screen_x .Screen/x DEO2
+	next_screen_y .Screen/y DEO2
+	#30 #28 #05 draw-box
 
 	( score )
-	score_screen_x #0008 SUB2
-	score_screen_y #0008 SUB2
-	#0038 #0028 #0f draw-box
+	score_screen_x .Screen/x DEO2
+	score_screen_y .Screen/y DEO2
+	#30 #20 #0f draw-box
 JMP2r
 
 @draw-bg-textures ( -- )
@@ -536,48 +536,47 @@ JMP2r
 	&score-done POP
 JMP2r
 
-@draw-box ( x y w h col -- )
-	;&col STA ;&h STA2 ;&w STA2 ;&y STA2 ;&x STA2
+@draw-box ( w h col -- )
+	;&col STA ;&h STA ;&w STA
 
-	( corners )
+	.Screen/x DEI2 #0008 SUB2 .Screen/x DEO2
+	.Screen/y DEI2 #0008 SUB2 .Screen/y DEO2
 
-	;border-chr/corner .Screen/addr DEO2
-	#00 .Screen/auto DEO
-	( tl )    #0000 ;&set-x JSR2 
-	          #0000 ;&set-y JSR2 #80 ;&put JSR2
-	( tr ) ;&w LDA2 ;&set-x JSR2 #90 ;&put JSR2
-	( br ) ;&h LDA2 ;&set-y JSR2 #b0 ;&put JSR2
-	( bl )    #0000 ;&set-x JSR2 #a0 ;&put JSR2
-
-	( edges )
-
-	;border-chr/edge-ver .Screen/addr DEO2
-	#02 .Screen/auto DEO
-	( left )     #0000 ;&set-x JSR2 #0008 ;&set-y JSR2 #80 ;&puth JSR2
-	( right ) ;&w LDA2 ;&set-x JSR2 #0008 ;&set-y JSR2 #90 ;&puth JSR2
-
-	;border-chr/edge-hor .Screen/addr DEO2
+	( tl )
 	#01 .Screen/auto DEO
-	( top )    #0008 ;&set-x JSR2    #0000 ;&set-y JSR2 #80 ;&putw JSR2
-	( bottom ) #0008 ;&set-x JSR2 ;&h LDA2 ;&set-y JSR2 #a0 ;&putw JSR2
+	;border-chr/corner .Screen/addr DEO2
+	#80 ;&put JSR2
+	( top )
+	;border-chr/edge-hor .Screen/addr DEO2
+	#80 [ LIT &w $1 ] ;&putn &brk JSR2
+	( tr )
+	#02 .Screen/auto DEO
+	;border-chr/corner .Screen/addr DEO2
+	#90 ;&put JSR2
+	( right )
+	;border-chr/edge-ver .Screen/addr DEO2
+	#90 [ LIT &h $1 ] ;&putn JSR2
+	( br )
+	;border-chr/corner .Screen/addr DEO2
+	#b0 ;&put JSR2
+	( left )
+	.Screen/x DEI2 #00 ;&w LDA #08 ADD SUB2 .Screen/x DEO2
+	.Screen/y DEI2 #00 ;&h LDA #08 ADD SUB2 .Screen/y DEO2
+	;border-chr/edge-ver .Screen/addr DEO2
+	#80 ;&h LDA ;&putn JSR2
+	( bl )    
+	#01 .Screen/auto DEO
+	;border-chr/corner .Screen/addr DEO2
+	#a0 ;&put JSR2
+	( bottom )
+	;border-chr/edge-hor .Screen/addr DEO2
+	#a0 ;&w LDA ;&putn JSR2
 JMP2r
-	&set-x ( offset* -- )
-		[ LIT2 &x $2 ] ADD2 .Screen/x DEO2
-	JMP2r
-	&set-y ( offset* -- )
-		[ LIT2 &y $2 ] ADD2 .Screen/y DEO2
-	JMP2r
 	&put ( flags -- )
 		[ LIT &col $1 ] ORA .Screen/sprite DEO
 	JMP2r
-	&putw ( flags -- )
-		[ LIT2 &w $2 ] NIP #08 SUB
+	&putn ( n flags -- )
 		&wloop OVR ,&put JSR #08 SUB DUP ?&wloop
-		POP2
-	JMP2r
-	&puth ( flags -- )
-		[ LIT2 &h $2 ] NIP #08 SUB
-		&hloop OVR ,&put JSR #08 SUB DUP ?&hloop
 		POP2
 	JMP2r
 
