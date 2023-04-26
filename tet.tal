@@ -673,8 +673,8 @@ JMP2r
 	007e 425a 5a42 7e00
 	ffff ffe7 e7ff ffff
 	&c
-	ff81 bda5 a5bd 81ff
 	007e 425a 5a42 7e00
+	ff81 bda5 a5bd 81ff
 	&e
 	007e 7e7e 7e7e 7e00
 	ffab d5ab d5ab d5ff
