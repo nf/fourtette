@@ -458,7 +458,7 @@ JMP2r
 
 @draw-bg ( -- )
 	( background )
-	;bg/stripes .Screen/addr DEO2
+	;bg/grid-dot .Screen/addr DEO2
 	#f2 .Screen/auto DEO
 	#0000 .Screen/x DEO2
 	&bg-x
@@ -700,6 +700,15 @@ JMP2r
 	&dots2
 	0000 4000 0000 1000
 	0000 4000 0200 0000
+	&grid
+	2020 2020 20ff 2020
+	0000 0000 0000 0000
+	&grid-dot
+	0010 0010 aa10 0010
+	0000 0000 0000 0000
+	&grid-dot2
+	2000 2000 2055 2000
+	0000 0000 0000 0000
 
 ( game data )
 
