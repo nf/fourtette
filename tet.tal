@@ -309,7 +309,7 @@ JMP2r
 	.next ;&each each-piece-block
 JMP2r
 	&each ( well-offset -- )
-		;well-next ADD2 #01 ROT ROT STA
+		;well-next ADD2 #03 ROT ROT STA
 	JMP2r
 
 @piece-bits ( piece -- piece-bits* )
