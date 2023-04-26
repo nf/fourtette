@@ -40,9 +40,6 @@
 
 ( program )
 
-
-@set-theme
-
 |0100 ( -> )
 	( theme ) 
 	;theme/mono theme/set
@@ -62,6 +59,11 @@
 BRK
 
 @on-frame ( -> )
+(
+	#04 button/pressed ?&p-sel
+		;draw-block/offs LDA INC #10 MOD ;draw-block/offs STA
+		&p-sel
+)
 	[ LIT &is-dead $1 ]
 		?&draw
 
@@ -180,7 +182,7 @@ JMP2r
 			?&block
 		&space #00
 			!&store
-		&block #02
+		&block #80
 		&store ROT ROT STAk ROT POP
 		INC2 DUP2 ;well/end LTH2
 			?&loop
@@ -199,10 +201,10 @@ JMP2r
 		DUP2 #0ff0 AND2 well_last_line GTH2
 			?&done
 		( sum elements )
-		LDAk [ LIT &line-sum $1 ] ADD ,&line-sum STR
+		LDAk #04 SFT [ LIT &line-sum $1 ] ADD ,&line-sum STR
 			!&loop
 		&eol
-			,&line-sum LDR #14 EQU
+			,&line-sum LDR &foo #14 EQU
 				?&hl-line
 			,&line-sum LDR #28 EQU
 				?&rem-line
@@ -212,7 +214,7 @@ JMP2r
 			&hl-line 
 				DUP2 #000a SUB2
 				&hl-block
-					DUP2 #04 ROT ROT STA
+					DUP2 LDAk #8f AND #40 ORA ROT ROT STA
 					INC2 GTH2k
 						?&hl-block
 				POP2 POP2 #00
@@ -231,7 +233,7 @@ JMP2r
 		( read block from line above )
 		DUP2k #0010 SUB2 LDA
 		( exclude current piece )
-		#fe AND 
+		#ef AND 
 		( store block in current line )
 		ROT ROT STA
 		( see if we're done )
@@ -258,26 +260,25 @@ JMP2r
 	.next/type LDZ INC #07 MOD .next/type STZ
 JMP2r
 
-@set-cur-piece ( -- )
-	.cur ;&each each-piece-block
+@set-piece ( piece mask addr* -- )
+	,&addr STR2 OVR LDZ #f0 ORA AND ,&type STR
+	;&each each-piece-block
 JMP2r
 	&each ( well-offset -- )
-		;well ADD2 #01 ROT ROT STA
+		[ LIT2 &addr $2 ] ADD2 [ LIT &type $1 ] ROT ROT STA
 	JMP2r
+
+@set-cur-piece ( -- )
+	.cur #1f ;well set-piece
+JMP2r
 
 @unset-cur-piece ( -- )
-	.cur ;&each each-piece-block
+	.cur #00 ;well set-piece
 JMP2r
-	&each ( well-offset -- )
-		;well ADD2 LDAk #fe AND ROT ROT STA
-	JMP2r
 
 @freeze-cur-piece ( -- )
-	.cur ;&each each-piece-block
+	.cur #2f ;well set-piece
 JMP2r
-	&each ( well-offset -- )
-		;well ADD2 #02 ROT ROT STA
-	JMP2r
 
 ( tries to move cur to test, reports whether it failed )
 @try-test-piece ( -- blocked )
@@ -299,7 +300,7 @@ JMP2r
 	#01
 JMP2r
 	&each ( well-offset -- )
-		;well ADD2 LDA #02 AND
+		;well ADD2 LDA #e0 AND
 		,&blocked LDR ORA ,&blocked STR
 	JMP2r
 
@@ -309,7 +310,7 @@ JMP2r
 	INC2 DUP2 ;well-next/end LTH2
 		?&clear
 	POP2
-	.next ;&each each-piece-block
+	.next #1f ;well-next set-piece
 JMP2r
 	&each ( well-offset -- )
 		;well-next ADD2 #03 ROT ROT STA
@@ -399,9 +400,8 @@ JMP2r
 			#40 ORA .Screen/sprite DEO
 				!&loop
 		&draw-block
-			;block-icn .Screen/addr DEO2
-			#c0 ORA .Screen/sprite DEO
-				!&loop
+			draw-block
+			!&loop
 		&eol
 			;pos/well-x LDA2 .Screen/x DEO2
 			.Screen/y DEI2 #0008 ADD2 .Screen/y DEO2
@@ -430,15 +430,21 @@ JMP2r
 			#40 ORA .Screen/sprite DEO
 				!&loop
 		&draw-block
-			;block-icn .Screen/addr DEO2
-			#c0 ORA .Screen/sprite DEO
-				!&loop
+			debug
+			draw-block
+			!&loop
 		&eol
 			;pos/next-x LDA2 #0008 ADD2 .Screen/x DEO2
 			.Screen/y DEI2 #0008 ADD2 .Screen/y DEO2
 			#000a ADD2
 			!&loop
 	&done POP2
+JMP2r
+
+@draw-block
+	#0f AND DUP
+	#04 MOD #00 SWP #0010 MUL2 ;blocks-icn ADD2 .Screen/addr DEO2
+	#03 MOD #03 ADD #80 ORA .Screen/sprite DEO
 JMP2r
 
 @draw-score ( -- )
@@ -648,17 +654,30 @@ JMP2r
 @pieces
 	&i 0f00 4444 0f00 4444
 	&s 4620 6c00 4620 6c00
-	&z 2640 c600 2640 c600
 	&l 4460 0e80 c440 2e00
-	&j 6440 e200 44c0 08e0
-	&t 4640 0e40 4c40 4e00
 	&b 6600 6600 6600 6600
+	&t 4640 0e40 4c40 4e00
+	&z 2640 c600 2640 c600
+	&j 6440 e200 44c0 08e0
 
 @blank-chr
 	ffff ffff ffff ffff
 @block-icn
 	7e81 8181 8181 817f
 	007f 7f7f 7f7f 7f7f
+@blocks-icn
+	&a
+	007e 7e7e 7e7e 7e00
+	ff81 8181 8181 81ff
+	&b
+	007e 7e7e 7e7e 7e00
+	ffab d5ab d5ab d5ff
+	&c
+	ff81 bda5 a5bd 81ff
+	007e 425a 5a42 7e00
+	&d
+	007c 7a76 6e5e 3e00
+	ff83 8589 91a1 c1ff
 
 @border-chr
 	&corner
