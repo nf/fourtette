@@ -362,17 +362,17 @@ JMP2r
 
 @pos
 	&well-x 0058
-	&well-y 0040
+	&well-y 0030
 	&well-w 08
 	&well-h 14
 
 	&next-x 00b8
-	&next-y 00b8
+	&next-y 00a8
 	&next-w 06
 	&next-h 05
 
 	&score-x 00b8
-	&score-y 0088
+	&score-y 0078
 	&score-w 06
 	&score-h 04
 
