@@ -6,13 +6,6 @@
 %debug { #f4 .System/debug DEO }
 %halt  { #81 .System/halt DEO }
 
-%well_screen_x { #0058 }
-%well_screen_y { #0040 }
-%next_screen_x { #00b8 }
-%next_screen_y { #00b8 }
-%score_screen_x { #00b8 }
-%score_screen_y { #0088 }
-
 %well_line_start { #03 }
 %well_line_end { #0c }
 %well_first_line { #0040 }
@@ -367,9 +360,25 @@ JMP2r
 
 ( draw game state )
 
+@pos
+	&well-x 0058
+	&well-y 0040
+	&well-w 08
+	&well-h 14
+
+	&next-x 00b8
+	&next-y 00b8
+	&next-w 06
+	&next-h 05
+
+	&score-x 00b8
+	&score-y 0088
+	&score-w 06
+	&score-h 04
+
 @draw-well ( -- )
-	well_screen_x .Screen/x DEO2
-	well_screen_y .Screen/y DEO2
+	;pos/well-x LDA2 .Screen/x DEO2
+	;pos/well-y LDA2 .Screen/y DEO2
 	#01 .Screen/auto DEO
 	well_first_block_minus_1 ;well ADD2 &loop
 		INC2
@@ -391,7 +400,7 @@ JMP2r
 			#c0 ORA .Screen/sprite DEO
 				!&loop
 		&eol
-			well_screen_x .Screen/x DEO2
+			;pos/well-x LDA2 .Screen/x DEO2
 			.Screen/y DEI2 #0008 ADD2 .Screen/y DEO2
 			#0005 ADD2
 			!&loop
@@ -399,8 +408,8 @@ JMP2r
 JMP2r
 
 @draw-next ( -- )
-	next_screen_x #0008 ADD2 .Screen/x DEO2
-	next_screen_y #0004 ADD2 .Screen/y DEO2
+	;pos/next-x LDA2 #0008 ADD2 .Screen/x DEO2
+	;pos/next-y LDA2 #0004 ADD2 .Screen/y DEO2
 	#01 .Screen/auto DEO
 	;well-next #0001 SUB2 &loop
 		INC2
@@ -422,7 +431,7 @@ JMP2r
 			#c0 ORA .Screen/sprite DEO
 				!&loop
 		&eol
-			next_screen_x #0008 ADD2 .Screen/x DEO2
+			;pos/next-x LDA2 #0008 ADD2 .Screen/x DEO2
 			.Screen/y DEI2 #0008 ADD2 .Screen/y DEO2
 			#000a ADD2
 			!&loop
@@ -430,8 +439,8 @@ JMP2r
 JMP2r
 
 @draw-score ( -- )
-	score_screen_x #0004 ADD2 
-	score_screen_y #0010 ADD2
+	;pos/score-x LDA2 #0004 ADD2 
+	;pos/score-y LDA2 #0010 ADD2
 	.score/lines LDZ2
 	#41
 	draw-num
@@ -440,37 +449,7 @@ JMP2r
 ( backgrounds )
 
 @draw-bg ( -- )
-	draw-bg-textures
-	draw-bg-boxes
-
-	next_screen_x #0001 ADD2
-	next_screen_y #0002 ADD2 
-	;strings/next #02 draw-str
-
-	score_screen_x #0001 ADD2
-	score_screen_y #0002 ADD2 
-	;strings/lines #02 draw-str
-JMP2r
-
-@draw-bg-boxes ( -- )
-	( main field )
-	
-	well_screen_x .Screen/x DEO2
-	well_screen_y .Screen/y DEO2
-	#50 #a0 #0a draw-box 
-
-	( next piece )
-	next_screen_x .Screen/x DEO2
-	next_screen_y .Screen/y DEO2
-	#30 #28 #05 draw-box
-
-	( score )
-	score_screen_x .Screen/x DEO2
-	score_screen_y .Screen/y DEO2
-	#30 #20 #0f draw-box
-JMP2r
-
-@draw-bg-textures ( -- )
+	( background )
 	;bg/stripes .Screen/addr DEO2
 	#f2 .Screen/auto DEO
 	#0000 .Screen/x DEO2
@@ -486,58 +465,47 @@ JMP2r
 		!&bg-x
 	&bg-done
 
+	( main field )
+	;pos/well-x LDA2 .Screen/x DEO2
+	;pos/well-y LDA2 .Screen/y DEO2
+	#0a #14 #8a draw-box 
+
 	;bg/dots .Screen/addr DEO2
-	#01 .Screen/auto DEO
-	well_screen_x .Screen/x DEO2
-	well_screen_y .Screen/y DEO2
-	#00 &well-y
-		INC 
-		DUP #07 MOD #00 EQU #70 SFT 
-		OVR #09 MOD #42 SFT 
-		ORA #03 ORA .Screen/sprite DEO
-		DUP #c8 GTH
-			?&well-done
-		DUP #0a MOD
-			?&well-y
-		well_screen_x .Screen/x DEO2
-		.Screen/y DEI2 #0008 ADD2 .Screen/y DEO2
-			!&well-y
-	&well-done POP
+	;pos/well-x LDA2 .Screen/x DEO2
+	;pos/well-y LDA2 .Screen/y DEO2
+	#0a #14 #03 #07 draw-texture
 
-	next_screen_x .Screen/x DEO2
-	next_screen_y .Screen/y DEO2
-	#00 &next-y
-		INC 
-		DUP #05 MOD #41 SFT
-		#81 ORA .Screen/sprite DEO
-		DUP #1d GTH
-			?&next-done
-		DUP #06 MOD
-			?&next-y
-		next_screen_x .Screen/x DEO2
-		.Screen/y DEI2 #0008 ADD2 .Screen/y DEO2
-			!&next-y
-	&next-done POP
+	( next piece )
+	;pos/next-x LDA2 .Screen/x DEO2
+	;pos/next-y LDA2 .Screen/y DEO2
+	#06 #05 #8a draw-box
 
-	score_screen_x .Screen/x DEO2
-	score_screen_y .Screen/y DEO2
-	#00 &score-y
-		INC 
-		DUP #04 MOD #71 SFT 
-		OVR #07 MOD #41 SFT ORA
-		#83 ORA .Screen/sprite DEO
-		DUP #17 GTH
-			?&score-done
-		DUP #06 MOD
-			?&score-y
-		score_screen_x .Screen/x DEO2
-		.Screen/y DEI2 #0008 ADD2 .Screen/y DEO2
-			!&score-y
-	&score-done POP
+	;bg/dots2 .Screen/addr DEO2
+	;pos/next-x LDA2 .Screen/x DEO2
+	;pos/next-y LDA2 .Screen/y DEO2
+	#06 #05 #03 #01 draw-texture
+
+	;pos/next-x LDA2 #0001 ADD2
+	;pos/next-y LDA2 #0002 ADD2 
+	;strings/next #02 draw-str
+
+	( score )
+	;pos/score-x LDA2 .Screen/x DEO2
+	;pos/score-y LDA2 .Screen/y DEO2
+	#06 #04 #8a draw-box
+
+	;bg/dots2 .Screen/addr DEO2
+	;pos/score-x LDA2 .Screen/x DEO2
+	;pos/score-y LDA2 .Screen/y DEO2
+	#06 #04 #02 #01 draw-texture
+
+	;pos/score-x LDA2 #0001 ADD2
+	;pos/score-y LDA2 #0002 ADD2 
+	;strings/lines #02 draw-str
 JMP2r
 
 @draw-box ( w h col -- )
-	;&col STA ;&h STA ;&w STA
+	;&col STA #08 MUL ;&h STA #08 MUL ;&w STA
 
 	.Screen/x DEI2 #0008 SUB2 .Screen/x DEO2
 	.Screen/y DEI2 #0008 SUB2 .Screen/y DEO2
@@ -545,32 +513,32 @@ JMP2r
 	( tl )
 	#01 .Screen/auto DEO
 	;border-chr/corner .Screen/addr DEO2
-	#80 ;&put JSR2
+	#00 ;&put JSR2
 	( top )
 	;border-chr/edge-hor .Screen/addr DEO2
-	#80 [ LIT &w $1 ] ;&putn &brk JSR2
+	#00 [ LIT &w $1 ] ;&putn &brk JSR2
 	( tr )
 	#02 .Screen/auto DEO
 	;border-chr/corner .Screen/addr DEO2
-	#90 ;&put JSR2
+	#10 ;&put JSR2
 	( right )
 	;border-chr/edge-ver .Screen/addr DEO2
-	#90 [ LIT &h $1 ] ;&putn JSR2
+	#10 [ LIT &h $1 ] ;&putn JSR2
 	( br )
 	;border-chr/corner .Screen/addr DEO2
-	#b0 ;&put JSR2
+	#30 ;&put JSR2
 	( left )
 	.Screen/x DEI2 #00 ;&w LDA #08 ADD SUB2 .Screen/x DEO2
 	.Screen/y DEI2 #00 ;&h LDA #08 ADD SUB2 .Screen/y DEO2
 	;border-chr/edge-ver .Screen/addr DEO2
-	#80 ;&h LDA ;&putn JSR2
+	#00 ;&h LDA ;&putn JSR2
 	( bl )    
 	#01 .Screen/auto DEO
 	;border-chr/corner .Screen/addr DEO2
-	#a0 ;&put JSR2
+	#20 ;&put JSR2
 	( bottom )
 	;border-chr/edge-hor .Screen/addr DEO2
-	#a0 ;&w LDA ;&putn JSR2
+	#20 ;&w LDA ;&putn JSR2
 JMP2r
 	&put ( flags -- )
 		[ LIT &col $1 ] ORA .Screen/sprite DEO
@@ -579,6 +547,25 @@ JMP2r
 		&wloop OVR ,&put JSR #08 SUB DUP ?&wloop
 		POP2
 	JMP2r
+
+@draw-texture ( w h col mod -- )
+	;&mod STA ;&col STA SWP DUP ;&w STA MUL
+	#01 .Screen/auto DEO
+	&loop
+		#01 SUB
+		DUP [ LIT &mod $1 ] MOD #00 EQU #70 SFT 
+		OVR #08 MOD #42 SFT ORA 
+		[ LIT &col $1 ] ORA .Screen/sprite DEO
+		DUP #00 EQU
+			?&done
+		DUP [ LIT &w $1 ] MOD
+			?&loop
+		&line
+		.Screen/x DEI2 #0008 #00 ;&w LDA MUL2 SUB2 .Screen/x DEO2
+		.Screen/y DEI2 #0008 ADD2 .Screen/y DEO2
+			!&loop
+	&done POP
+JMP2r
 
 ( text )
 
@@ -636,6 +623,26 @@ JMP2r
 
 @border-chr
 	&corner
+	0000 0000 0000 0001
+	0000 0000 0000 0000
+	&edge-ver
+	0101 0101 0101 0101
+	0202 0202 0202 0202
+	&edge-hor
+	0000 0000 0000 00ff
+	0000 0000 0000 ff00
+@border2-chr
+	&corner
+	0000 0000 0000 0303
+	0000 0000 0001 0004
+	&edge-ver
+	0303 0303 0303 0303
+	0404 0404 0404 0404
+	&edge-hor
+	0000 0000 0000 ffff
+	0000 0000 00ff 0000
+@border3-chr
+	&corner
 	0000 0000 0003 0707
 	0000 0000 0304 0808
 	&edge-ver
@@ -651,6 +658,9 @@ JMP2r
 	&dots
 	0000 4000 0000 1000
 	0000 4000 0000 0000
+	&dots2
+	0000 4000 0000 1000
+	0000 4000 0200 0000
 
 ( game data )
 
