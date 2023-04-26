@@ -69,6 +69,8 @@ BRK
 	[ LIT &is-dead $1 ]
 		?&draw
 
+	#01 ;&update-cur STA
+
 	( compact if we have a reason to )
 	[ LIT &is-compact $1 ]
 		?&p-compact
@@ -77,10 +79,9 @@ BRK
 	DUP ,&is-compact STR 
 		?&p-compact
 	( compact mutated, so re-set the piece which was wiped )
-	set-cur-piece
+	#00 ;&update-cur STA
 	&p-compact
 
-	( copy cur to test )
 	.test .cur copy-piece
 
 	( inputs )
@@ -103,10 +104,11 @@ BRK
 		AND ?&x-done
 	.test try-piece
 		?&x-done
-	( perform x or y movement )
-	unset-cur-piece
+	( x or rot can change, update cur )
+	.ghost clear-piece
+	.cur clear-piece
 	.cur .test copy-piece
-	set-cur-piece
+	#00 ;&update-cur STA
 	&x-done
 
 	#01 ,&inc-y STR
@@ -125,28 +127,45 @@ BRK
 	#00 ,&inc-y STR
 	&no-down
 
+	( up button )
+	#10 button/pressed 
+		?&test-y
+	update-ghost
+	.cur clear-piece
+	.cur .ghost copy-piece
+	!&freeze
+
 	( test y change )
+	&test-y
 	[ LIT &inc-y $1 ]
-		?&draw
+		?&maybe-update-cur
+	.test .cur copy-piece
 	.test/y LDZ INC .test/y STZ
 	.test try-piece
 		?&freeze
-	( perform y movement ) 
-	unset-cur-piece
+	( y can change, update cur )
+	.cur clear-piece
 	.cur .test copy-piece
-	set-cur-piece
-	!&draw
+	#00 ;&update-cur STA
+	!&maybe-update-cur
 	( freeze the current piece, create a new piece )
 	&freeze
 	freeze-cur-piece
 	new-cur-piece
+	#00 ;&update-cur STA
 	( check if the new piece fits in the well, if not we died )
 	.cur try-piece
 		?&dead
-	set-cur-piece
 	set-next-piece
 	( there are new frozen blocks, compact next frame )
 	#00 ;&is-compact STA
+
+	&maybe-update-cur
+	[ LIT &update-cur $1 ]
+		?&draw
+	update-ghost
+	set-ghost-piece
+	set-cur-piece
 	!&draw
 
 	&dead
@@ -159,6 +178,15 @@ BRK
 	draw-next
 	draw-score
 BRK
+
+@update-ghost
+	.ghost .cur copy-piece
+	&loop
+	.ghost/y LDZ INC .ghost/y STZ
+	.ghost try-piece #00 EQU 
+		?&loop
+	.ghost/y LDZ #01 SUB .ghost/y STZ
+JMP2r
 
 @button
 	[ LIT &state $1 ]
@@ -276,23 +304,27 @@ JMP2r
 JMP2r
 
 @set-piece ( piece mask addr* -- )
-	,&addr STR2 OVR LDZ #f0 ORA AND ,&type STR
+	,&addr STR2 OVR LDZ #f8 ORA AND ,&val STR
 	;&each each-piece-block
 JMP2r
 	&each ( well-offset -- )
-		[ LIT2 &addr $2 ] ADD2 [ LIT &type $1 ] ROT ROT STA
+		[ LIT2 &addr $2 ] ADD2 [ LIT &val $1 ] ROT ROT STA
 	JMP2r
 
 @set-cur-piece ( -- )
-	.cur #1f ;well set-piece
+	.cur #17 ;well set-piece
 JMP2r
 
-@unset-cur-piece ( -- )
-	.cur #00 ;well set-piece
+@clear-piece ( -- )
+	#00 ;well set-piece
 JMP2r
 
 @freeze-cur-piece ( -- )
-	.cur #2f ;well set-piece
+	.cur #27 ;well set-piece
+JMP2r
+
+@set-ghost-piece ( -- )
+	.ghost #08 ;well set-piece
 JMP2r
 
 ( tries to move cur to test, reports whether it failed )
@@ -395,15 +427,21 @@ JMP2r
 		DUP2 #0ff0 AND2 well_last_line GTH2
 			?&done
 		( draw blank or block? )
-		DUP2 LDA DUP #f0 AND
-			?&draw-block
-		&draw-blank
+		DUP2 LDA DUP #08 AND
+			?&ghost
+		DUP #f0 AND
+			?&block
+		&blank
 			;blank-chr .Screen/addr DEO2
 			#40 ORA .Screen/sprite DEO
 				!&loop
-		&draw-block
+		&block
 			draw-block
-			!&loop
+				!&loop
+		&ghost
+			;ghost-icn .Screen/addr DEO2
+			POP #41 .Screen/sprite DEO
+				!&loop
 		&eol
 			;pos/well-x LDA2 .Screen/x DEO2
 			.Screen/y DEI2 #0008 ADD2 .Screen/y DEO2
@@ -443,7 +481,7 @@ JMP2r
 JMP2r
 
 @draw-block
-	#0f AND DUP
+	#07 AND DUP
 	#04 MOD #00 SWP #0010 MUL2 ;blocks-icn ADD2 .Screen/addr DEO2
 	#03 MOD #03 ADD #80 ORA .Screen/sprite DEO
 JMP2r
@@ -685,6 +723,9 @@ JMP2r
 	&d
 	007c 7a76 6e5e 3e00
 	ff83 8589 91a1 c1ff
+@ghost-icn
+	aa01 8001 8001 8055
+	0000 0000 0000 0000
 
 @border-chr
 	&corner
