@@ -55,7 +55,7 @@
 	#0100 .Screen/width DEO2
 	#0100 .Screen/height DEO2
 
-	#60 ;on-frame/speed STA
+	#05 ;on-frame/speed STA
 
 	init-well
 	new-cur-piece
@@ -87,27 +87,44 @@ BRK
 
 	.test .cur copy-piece
 
-	( inputs )
+	( test rot change )
 	#01 button/pressed ?&p-a
 		.test/rot LDZ #03 ADD #04 MOD .test/rot STZ
 		&p-a
 	#02 button/pressed ?&p-b
 		.test/rot LDZ INC #04 MOD .test/rot STZ
 		&p-b
+	.test/rot LDZ .cur/rot LDZ EQU
+		?&rot-done
+	.test try-piece #00 EQU
+		?&rot-ok
+	( if rot failed, try moving up one square )
+	.test/y LDZ #01 SUB .test/y STZ
+	.test try-piece
+		?&rot-done
+	( rot can change, update cur )
+	&rot-ok
+	.ghost clear-piece
+	.cur clear-piece
+	.cur .test copy-piece
+	#00 ;&frozen-time STA
+	#00 ;&update-cur STA
+	&rot-done
+
+	.cur/rot LDZ .test/rot STZ
+
+	( test x change )
 	#40 button/pressed ?&p-lt
 		.test/x LDZ #01 SUB .test/x STZ
 		&p-lt
 	#80 button/pressed ?&p-rt
 		.test/x LDZ INC .test/x STZ
 		&p-rt 
-
-	( test x/rot change )
-	.test/rot LDZ .cur/rot LDZ EQU
 	.test/x LDZ .cur/x LDZ EQU
-		AND ?&x-done
+		?&x-done
 	.test try-piece
 		?&x-done
-	( x or rot can change, update cur )
+	( x can change, update cur )
 	.ghost clear-piece
 	.cur clear-piece
 	.cur .test copy-piece
@@ -145,12 +162,16 @@ BRK
 	.test .cur copy-piece
 	.test/y LDZ INC .test/y STZ
 	.test try-piece
-		?&freeze
+		?&maybe-freeze
 	( y can change, update cur )
 	.cur clear-piece
 	.cur .test copy-piece
+	#00 ,&frozen-time STR
 	#00 ;&update-cur STA
 	!&maybe-update-cur
+	&maybe-freeze
+	[ LIT &frozen-time $1 ] INC DUP ,&frozen-time STR #08 LTH
+		?&maybe-update-cur
 	( freeze the current piece, create a new piece )
 	&freeze
 	freeze-cur-piece
