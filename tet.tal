@@ -53,7 +53,6 @@
 	#0100 .Screen/width DEO2
 	#0100 .Screen/height DEO2
 
-	draw-bg
 	init-well
 	new-cur-piece
 	set-cur-piece
@@ -138,6 +137,8 @@ BRK
 	#01 ;&is-dead STA
 
 	&draw
+
+	draw-bg
 	draw-well
 	draw-next
 	draw-score
@@ -701,3 +702,21 @@ JMP2r
 	6666 6666 663c 1800 c6c6 c6d6 feee c600
 	6666 3c18 3c66 6600 6666 663c 1818 1800
 	7e06 0c18 3060 7e00 7860 6060 6060 7800
+
+@costab
+	fe fd fd fd fd fd fc fc fb fa fa f9 f8 f7 f6 f5
+	f4 f3 f1 f0 ef ed eb ea e8 e6 e5 e3 e1 df dd da
+	d8 d6 d4 d1 cf cd ca c8 c5 c2 c0 bd ba b8 b5 b2
+	af ac a9 a6 a3 a0 9d 9a 97 94 91 8e 8b 88 85 82
+	7f 7b 78 75 72 6f 6c 69 66 63 60 5d 5a 57 54 51
+	4e 4b 48 45 43 40 3d 3b 38 35 33 30 2e 2c 29 27
+	25 23 20 1e 1c 1a 18 17 15 13 12 10 0e 0d 0c 0a
+	09 08 07 06 05 04 03 03 02 01 01 00 00 00 00 00
+	00 00 00 00 00 00 01 01 02 03 03 04 05 06 07 08
+	09 0a 0c 0d 0e 10 12 13 15 17 18 1a 1c 1e 20 23
+	25 27 29 2c 2e 30 33 35 38 3b 3d 40 43 45 48 4b
+	4e 51 54 57 5a 5d 60 63 66 69 6c 6f 72 75 78 7b
+	7e 82 85 88 8b 8e 91 94 97 9a 9d a0 a3 a6 a9 ac
+	af b2 b5 b8 ba bd c0 c2 c5 c8 ca cd cf d1 d4 d6
+	d8 da dd df e1 e3 e5 e6 e8 ea eb ed ef f0 f1 f3
+	f4 f5 f6 f7 f8 f9 fa fa fb fc fc fd fd fd fd fd
