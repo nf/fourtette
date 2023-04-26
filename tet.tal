@@ -39,6 +39,7 @@
 @score
 	&level $1
 	&lines $2
+	&points $2
 
 ( program )
 
@@ -230,6 +231,7 @@ JMP2r
 JMP2r
 
 @compact-well ( -- noop )
+	#00 ;&lines STA
 	#00 ,&line-sum STR
 	well_first_block_minus_1 ;well ADD2
 	&loop
@@ -248,24 +250,35 @@ JMP2r
 				?&hl-line
 			,&line-sum LDR #28 EQU
 				?&rem-line
-			#00 ,&line-sum STR
-			#0005 ADD2
-				!&loop
+			!&cont
 			&hl-line 
 				DUP2 #000a SUB2
 				&hl-block
 					DUP2 LDAk #8f AND #40 ORA ROT ROT STA
 					INC2 GTH2k
 						?&hl-block
-				POP2 POP2 #00
-				JMP2r
+				,&lines LDR INC ,&lines STR
+				POP2
+				!&cont
 			&rem-line
 				remove-well-line
-				.score/lines LDZ2 INC2 .score/lines STZ2
 				#00
 				JMP2r
-	&done POP2 #01
+			&cont
+			#00 ,&line-sum STR
+			#0005 ADD2
+				!&loop
+	&done POP2
+
+	,&lines LDR
+		?&inc-score
+	#01
 JMP2r
+	&inc-score
+		#00 [ LIT &lines $1 ] .score/lines LDZ2 ADD2 .score/lines STZ2
+		#00 ,&lines LDR DUP MUL .score/points LDZ2 ADD2 .score/points STZ2
+		#00
+	JMP2r
 
 @remove-well-line ( well-addr-on-line -- )
 	&loop
@@ -273,7 +286,7 @@ JMP2r
 		( read block from line above )
 		DUP2k #0010 SUB2 LDA
 		( exclude current piece )
-		#ef AND 
+		#e7 AND 
 		( store block in current line )
 		ROT ROT STA
 		( see if we're done )
@@ -410,9 +423,9 @@ JMP2r
 	&next-h 05
 
 	&score-x 00b8
-	&score-y 0068
+	&score-y 0058
 	&score-w 06
-	&score-h 06
+	&score-h 08
 
 @draw-well ( -- )
 	;pos/well-x LDA2 .Screen/x DEO2
@@ -488,13 +501,18 @@ JMP2r
 
 @draw-score ( -- )
 	;pos/score-x LDA2 #0004 ADD2 
-	;pos/score-y LDA2 #000d ADD2
+	;pos/score-y LDA2 #000e ADD2
 	#00 .score/level LDZ
 	#41
 	draw-num
 	;pos/score-x LDA2 #0004 ADD2 
-	;pos/score-y LDA2 #0024 ADD2
+	;pos/score-y LDA2 #0022 ADD2
 	.score/lines LDZ2
+	#41
+	draw-num
+	;pos/score-x LDA2 #0004 ADD2 
+	;pos/score-y LDA2 #0036 ADD2
+	.score/points LDZ2
 	#41
 	draw-num
 JMP2r
@@ -569,8 +587,12 @@ JMP2r
 	;strings/level #02 draw-str
 
 	;pos/score-x LDA2 #0004 ADD2
-	;pos/score-y LDA2 #001b ADD2 
+	;pos/score-y LDA2 #0018 ADD2 
 	;strings/lines #02 draw-str
+
+	;pos/score-x LDA2 #0004 ADD2
+	;pos/score-y LDA2 #002c ADD2 
+	;strings/score #02 draw-str
 JMP2r
 
 @draw-box ( w h col -- )
@@ -689,6 +711,7 @@ JMP2r
 @strings
 	&level "LEVEL $1
 	&lines "LINES $1
+	&score "SCORE $1
 	&next "NEXT $1
 @pieces
 	&i 0f00 4444 0f00 4444
