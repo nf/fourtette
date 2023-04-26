@@ -40,11 +40,12 @@
 
 ( program )
 
+
+@set-theme
+
 |0100 ( -> )
 	( theme ) 
-	#0ea5 .System/r DEO2 
-	#0cf2 .System/g DEO2
-	#09d9 .System/b DEO2
+	;theme/mono theme/set
 
 	( vectors )
 	;on-frame .Screen/vector DEO2
@@ -629,6 +630,16 @@ JMP2r
 	JMP2r
 
 ( assets )
+
+@theme
+	&set ( addr* -- )
+		INC2k INC2 INC2k INC2
+		LDA2 .System/b DEO2
+		LDA2 .System/g DEO2
+		LDA2 .System/r DEO2 
+	JMP2r
+	&mono    c359 c359 d46a
+	&cga-ish 0ea5 0cf2 09d9 
 
 @strings
 	&level "LEVEL $1
