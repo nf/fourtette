@@ -55,6 +55,8 @@
 	#0100 .Screen/width DEO2
 	#0100 .Screen/height DEO2
 
+	#60 ;on-frame/speed STA
+
 	init-well
 	new-cur-piece
 	set-cur-piece
@@ -116,7 +118,7 @@ BRK
 
 	( gravity )
 	[ LIT &tick $1 ] INC
-	#20 MOD
+	[ LIT &speed $1 ] MOD
 	DUP ,&tick STR
 		?&no-tick
 	#00 ,&inc-y STR
@@ -307,7 +309,7 @@ JMP2r
 
 @new-cur-piece ( -- )
 	#06 .cur/x STZ
-	#00 .cur/y STZ
+	#02 .cur/y STZ
 	#00 .cur/rot STZ
 	.next/type LDZ .cur/type STZ
 
