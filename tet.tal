@@ -28,11 +28,13 @@
 |0010
 
 ( the piece controlled by the player )
-@cur  &type $1 &rot $1 &x $1 &y $1
+@cur   &type $1 &rot $1 &x $1 &y $1
 ( a virtual piece used to cur piece movement )
-@test &type $1 &rot $1 &x $1 &y $1
+@test  &type $1 &rot $1 &x $1 &y $1
+( a virtual piece that sits where cur would drop )
+@ghost &type $1 &rot $1 &x $1 &y $1
 ( the next piece to enter the field )
-@next &type $1 &rot $1 &x $1 &y $1
+@next  &type $1 &rot $1 &x $1 &y $1
 
 @score
 	&level $1
@@ -79,7 +81,7 @@ BRK
 	&p-compact
 
 	( copy cur to test )
-	copy-cur-to-test
+	.test .cur copy-piece
 
 	( inputs )
 	#01 button/pressed ?&p-a
@@ -99,37 +101,47 @@ BRK
 	.test/rot LDZ .cur/rot LDZ EQU
 	.test/x LDZ .cur/x LDZ EQU
 		AND ?&x-done
-	try-test-piece POP
+	.test try-piece
+		?&x-done
+	( perform x or y movement )
+	unset-cur-piece
+	.cur .test copy-piece
+	set-cur-piece
 	&x-done
 
-	#00 ,&inc-y STR
+	#01 ,&inc-y STR
 
 	( gravity )
 	[ LIT &tick $1 ] INC
 	#20 MOD
 	DUP ,&tick STR
 		?&no-tick
-	#01 ,&inc-y STR
+	#00 ,&inc-y STR
 	&no-tick
 
 	( down button )
 	#20 button/held
 		?&no-down
-	#01 ,&inc-y STR
+	#00 ,&inc-y STR
 	&no-down
 
 	( test y change )
 	[ LIT &inc-y $1 ]
-		#00 EQU ?&draw
+		?&draw
 	.test/y LDZ INC .test/y STZ
-	try-test-piece
-		#00 EQU ?&draw
+	.test try-piece
+		?&freeze
+	( perform y movement ) 
+	unset-cur-piece
+	.cur .test copy-piece
+	set-cur-piece
+	!&draw
 	( freeze the current piece, create a new piece )
+	&freeze
 	freeze-cur-piece
 	new-cur-piece
 	( check if the new piece fits in the well, if not we died )
-	copy-cur-to-test
-	try-test-piece
+	.cur try-piece
 		?&dead
 	set-cur-piece
 	set-next-piece
@@ -204,7 +216,7 @@ JMP2r
 		LDAk #04 SFT [ LIT &line-sum $1 ] ADD ,&line-sum STR
 			!&loop
 		&eol
-			,&line-sum LDR &foo #14 EQU
+			,&line-sum LDR #14 EQU
 				?&hl-line
 			,&line-sum LDR #28 EQU
 				?&rem-line
@@ -242,11 +254,14 @@ JMP2r
 	POP2
 JMP2r
 
-@copy-cur-to-test
-	.cur/type LDZ .test/type STZ
-	.cur/rot LDZ .test/rot STZ
-	.cur/y LDZ .test/y STZ
-	.cur/x LDZ .test/x STZ
+@copy-piece ( dst src -- )
+	SWPk INC SWP INC
+	SWPk INC SWP INC
+	SWPk INC SWP INC
+	LDZ SWP STZ
+	LDZ SWP STZ
+	LDZ SWP STZ
+	LDZ SWP STZ
 JMP2r
 
 @new-cur-piece ( -- )
@@ -281,27 +296,14 @@ JMP2r
 JMP2r
 
 ( tries to move cur to test, reports whether it failed )
-@try-test-piece ( -- blocked )
+@try-piece ( piece -- blocked )
 	#00 ,&blocked STR
-	.test ;&each each-piece-block
-	[ LIT &blocked $1 ]
-		?&is-blocked
-	unset-cur-piece
-	.test/rot LDZ .cur/rot STZ
-	.test/x   LDZ .cur/x   STZ
-	.test/y   LDZ .cur/y   STZ
-	set-cur-piece
-	#00 
-JMP2r
-	&is-blocked
-	.cur/rot LDZ .test/rot STZ
-	.cur/x   LDZ .test/x   STZ
-	.cur/y   LDZ .test/y   STZ
-	#01
+	;&each each-piece-block
+	,&blocked LDR
 JMP2r
 	&each ( well-offset -- )
 		;well ADD2 LDA #e0 AND
-		,&blocked LDR ORA ,&blocked STR
+		[ LIT &blocked $1 ] ORA ,&blocked STR
 	JMP2r
 
 @set-next-piece ( -- )
@@ -430,7 +432,6 @@ JMP2r
 			#40 ORA .Screen/sprite DEO
 				!&loop
 		&draw-block
-			debug
 			draw-block
 			!&loop
 		&eol
