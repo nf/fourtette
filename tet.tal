@@ -417,13 +417,13 @@ JMP2r
 	&well-w 0a
 	&well-h 14
 
-	&next-x 00b8
+	&next-x 00b0
 	&next-y 00a8
 	&next-w 06
 	&next-h 05
 
-	&score-x 00b8
-	&score-y 0058
+	&score-x 0020
+	&score-y 0030
 	&score-w 06
 	&score-h 08
 
@@ -446,7 +446,7 @@ JMP2r
 			?&block
 		&blank
 			;blank-chr .Screen/addr DEO2
-			#40 ORA .Screen/sprite DEO
+			POP #40 .Screen/sprite DEO
 				!&loop
 		&block
 			draw-block
@@ -465,7 +465,7 @@ JMP2r
 
 @draw-next ( -- )
 	;pos/next-x LDA2 #0008 ADD2 .Screen/x DEO2
-	;pos/next-y LDA2 #0004 ADD2 .Screen/y DEO2
+	;pos/next-y LDA2 #0006 ADD2 .Screen/y DEO2
 	#01 .Screen/auto DEO
 	;well-next #0001 SUB2 &loop
 		INC2
@@ -564,8 +564,8 @@ JMP2r
 	;pos/next-h LDA
 	#03 #01 draw-texture
 
-	;pos/next-x LDA2 #0001 ADD2
-	;pos/next-y LDA2 #0002 ADD2 
+	;pos/next-x LDA2 #0008 ADD2
+	;pos/next-y LDA2 #0004 ADD2 
 	;strings/next #02 draw-str
 
 	( score )
