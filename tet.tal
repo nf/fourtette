@@ -393,7 +393,7 @@ JMP2r
 		DUP2 #0ff0 AND2 well_last_line GTH2
 			?&done
 		( draw blank or block? )
-		DUP2 LDA DUP
+		DUP2 LDA DUP #f0 AND
 			?&draw-block
 		&draw-blank
 			;blank-chr .Screen/addr DEO2
