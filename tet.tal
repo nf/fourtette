@@ -35,6 +35,7 @@
 @next &type $1 &rot $1 &x $1 &y $1
 
 @score
+	&level $1
 	&lines $2
 
 ( program )
@@ -364,7 +365,7 @@ JMP2r
 @pos
 	&well-x 0058
 	&well-y 0030
-	&well-w 08
+	&well-w 0a
 	&well-h 14
 
 	&next-x 00b8
@@ -373,9 +374,9 @@ JMP2r
 	&next-h 05
 
 	&score-x 00b8
-	&score-y 0078
+	&score-y 0068
 	&score-w 06
-	&score-h 04
+	&score-h 06
 
 @draw-well ( -- )
 	;pos/well-x LDA2 .Screen/x DEO2
@@ -441,7 +442,12 @@ JMP2r
 
 @draw-score ( -- )
 	;pos/score-x LDA2 #0004 ADD2 
-	;pos/score-y LDA2 #0010 ADD2
+	;pos/score-y LDA2 #000d ADD2
+	#00 .score/level LDZ
+	#41
+	draw-num
+	;pos/score-x LDA2 #0004 ADD2 
+	;pos/score-y LDA2 #0024 ADD2
 	.score/lines LDZ2
 	#41
 	draw-num
@@ -469,22 +475,30 @@ JMP2r
 	( main field )
 	;pos/well-x LDA2 .Screen/x DEO2
 	;pos/well-y LDA2 .Screen/y DEO2
-	#0a #14 #8a draw-box 
+	;pos/well-w LDA
+	;pos/well-h LDA
+	#8a draw-box 
 
 	;bg/dots .Screen/addr DEO2
 	;pos/well-x LDA2 .Screen/x DEO2
 	;pos/well-y LDA2 .Screen/y DEO2
-	#0a #14 #03 #07 draw-texture
+	;pos/well-w LDA
+	;pos/well-h LDA
+	#03 #07 draw-texture
 
 	( next piece )
 	;pos/next-x LDA2 .Screen/x DEO2
 	;pos/next-y LDA2 .Screen/y DEO2
-	#06 #05 #8a draw-box
+	;pos/next-w LDA
+	;pos/next-h LDA
+	#8a draw-box
 
 	;bg/dots2 .Screen/addr DEO2
 	;pos/next-x LDA2 .Screen/x DEO2
 	;pos/next-y LDA2 .Screen/y DEO2
-	#06 #05 #03 #01 draw-texture
+	;pos/next-w LDA
+	;pos/next-h LDA
+	#03 #01 draw-texture
 
 	;pos/next-x LDA2 #0001 ADD2
 	;pos/next-y LDA2 #0002 ADD2 
@@ -493,15 +507,23 @@ JMP2r
 	( score )
 	;pos/score-x LDA2 .Screen/x DEO2
 	;pos/score-y LDA2 .Screen/y DEO2
-	#06 #04 #8a draw-box
+	;pos/score-w LDA
+	;pos/score-h LDA
+	#8a draw-box
 
 	;bg/dots2 .Screen/addr DEO2
 	;pos/score-x LDA2 .Screen/x DEO2
 	;pos/score-y LDA2 .Screen/y DEO2
-	#06 #04 #02 #01 draw-texture
+	;pos/score-w LDA
+	;pos/score-h LDA
+	#03 #04 draw-texture
 
-	;pos/score-x LDA2 #0001 ADD2
-	;pos/score-y LDA2 #0002 ADD2 
+	;pos/score-x LDA2 #0004 ADD2
+	;pos/score-y LDA2 #0004 ADD2 
+	;strings/level #02 draw-str
+
+	;pos/score-x LDA2 #0004 ADD2
+	;pos/score-y LDA2 #001b ADD2 
 	;strings/lines #02 draw-str
 JMP2r
 
@@ -593,18 +615,23 @@ JMP2r
 	#03e8 DIV2k DUP2 NIP ,&digit JSR MUL2 SUB2
 	#0064 DIV2k DUP2 NIP ,&digit JSR MUL2 SUB2 NIP
 	#0a DIVk DUP ,&digit JSR MUL SUB
-	,&digit JSR
+	,&p-digit JSR
 	STHr POP
 	#00 .Screen/auto DEO
 JMP2r
 	&digit ( chr -- )
-		#10 ADD #00 SWP #30 SFT2 ;font ADD2 .Screen/addr DEO2
+		DUP ?&p-digit POP #0000 !&put
+		&p-digit 
+		#10 ADD #00 SWP #30 SFT2 
+		&put
+		;font ADD2 .Screen/addr DEO2
 		OVR2r NIPr STHr .Screen/sprite DEO
 	JMP2r
 
 ( assets )
 
 @strings
+	&level "LEVEL $1
 	&lines "LINES $1
 	&next "NEXT $1
 @pieces
