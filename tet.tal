@@ -55,7 +55,7 @@
 	#0100 .Screen/width DEO2
 	#0100 .Screen/height DEO2
 
-	#05 ;on-frame/speed STA
+	#30 ;on-frame/speed STA
 
 	init-well
 	new-cur-piece
@@ -197,12 +197,7 @@ BRK
 
 	&draw
 
-	draw-bg
-	;pos/well-x LDA2 .Screen/x DEO2
-	;pos/well-y LDA2 .Screen/y DEO2
-	;well #0042 ADD2 draw-well
-	draw-next
-	draw-score
+	draw-all
 BRK
 
 @update-ghost
@@ -382,11 +377,9 @@ JMP2r
 	INC2 DUP2 ;well-next/end LTH2
 		?&clear
 	POP2
-	.next #1f ;well-next set-piece
+	&set
+	.next #17 ;well-next set-piece
 JMP2r
-	&each ( well-offset -- )
-		;well-next ADD2 #03 ROT ROT STA
-	JMP2r
 
 @piece-bits ( piece -- piece-bits* )
 	LDZk #30 SFT ( type ) 
@@ -443,28 +436,48 @@ JMP2r
 	&well-h 14
 
 	&next-x 00b0
-	&next-y 00a8
+	&next-y 00b0
 	&next-w 06
-	&next-h 05
+	&next-h 04
 
 	&score-x 0020
 	&score-y 0030
 	&score-w 06
 	&score-h 08
 
-@draw-well ( well* -- )
+@draw-all
+	draw-bg
+
+	( draw well )
+	;pos/well-x LDA2 .Screen/x DEO2
+	;pos/well-y LDA2 .Screen/y DEO2
+	;well #0043 ADD2 #14 draw-well
+
+	( draw next piece in center of box )
+	;pos/next-x LDA2 #0008 ADD2
+	#00 .next/type LDZ DUP #00 NEQ SWP #03 NEQ AND #0004 MUL2 ADD2
+	.Screen/x DEO2
+	;pos/next-y LDA2 INC2
+	#00 .next/type LDZ #00 NEQ #0004 MUL2 ADD2
+	.Screen/y DEO2
+	;well-next #04 &next draw-well
+
+	draw-score
+JMP2r
+
+@draw-well ( well* height -- )
+	#00 SWP #0010 MUL2 ,&bottom STR2
 	#01 .Screen/auto DEO
 	#0000 ,&n STR2
 	&loop
-		,&n LDR2 INC2k ,&n STR2 DUP2
 		( check eol )
-		#000f AND2 #000a EQU2
+		,&n LDR2 #000f AND2 #000a EQU2
 			?&eol
 		( check bottom )
-		#0ff0 AND2 #0140 EQU2
+		,&n LDR2 [ LIT2 &bottom $2 ] EQU2
 			?&done
 		( load well value )
-		DUP2 [ LIT2 &n $2 ] ADD2 LDA
+		DUP2 [ LIT2 &n $2 ] INC2k ,&n STR2 ADD2 LDA
 		( draw ghost? )
 		DUP #08 AND
 			?&ghost
@@ -476,47 +489,17 @@ JMP2r
 			POP #40 .Screen/sprite DEO
 				!&loop
 		&ghost
+			POP
 			;ghost-icn .Screen/addr DEO2
-			POP #41 .Screen/sprite DEO
+			#41 .Screen/sprite DEO
 				!&loop
 		&block
 			draw-block
 				!&loop
 		&eol
-			POP2
 			.Screen/x DEI2 #0050 SUB2 .Screen/x DEO2
 			.Screen/y DEI2 #0008 ADD2 .Screen/y DEO2
-			,&n LDR2 #0005 ADD2 ,&n STR2
-			!&loop
-	&done POP2
-JMP2r
-
-@draw-next ( -- )
-	;pos/next-x LDA2 #0008 ADD2 .Screen/x DEO2
-	;pos/next-y LDA2 #0006 ADD2 .Screen/y DEO2
-	#01 .Screen/auto DEO
-	;well-next #0001 SUB2 &loop
-		INC2
-		( check eol )
-		DUP #0f AND #04 GTH
-			?&eol
-		( check bottom )
-		DUP #f0 AND #40 GTH
-			?&done
-		( draw blank or block? )
-		DUP2 LDA DUP
-			?&draw-block
-		&draw-blank
-			;blank-chr .Screen/addr DEO2
-			#40 ORA .Screen/sprite DEO
-				!&loop
-		&draw-block
-			draw-block
-			!&loop
-		&eol
-			;pos/next-x LDA2 #0008 ADD2 .Screen/x DEO2
-			.Screen/y DEI2 #0008 ADD2 .Screen/y DEO2
-			#000a ADD2
+			,&n LDR2 #0006 ADD2 ,&n STR2
 			!&loop
 	&done POP2
 JMP2r
@@ -585,15 +568,15 @@ JMP2r
 	;pos/next-h LDA
 	#8a draw-box
 
-	;bg/dots2 .Screen/addr DEO2
+	;blank-chr .Screen/addr DEO2
 	;pos/next-x LDA2 .Screen/x DEO2
 	;pos/next-y LDA2 .Screen/y DEO2
 	;pos/next-w LDA
 	;pos/next-h LDA
-	#03 #01 draw-texture
+	#00 #01 draw-texture
 
 	;pos/next-x LDA2 #0008 ADD2
-	;pos/next-y LDA2 #0004 ADD2 
+	;pos/next-y LDA2 #0003 ADD2 
 	;strings/next #02 draw-str
 
 	( score )
@@ -742,16 +725,17 @@ JMP2r
 	&score "SCORE $1
 	&next "NEXT $1
 @pieces
-	&i 0f00 4444 0f00 4444
-	&s 4620 6c00 4620 6c00
-	&l 4460 0e80 c440 2e00
+	&i 0f00 2222 00f0 4444 
+	&s 6c00 4620 06c0 8c40
+	&l 2e00 4460 0e80 c440
 	&b 6600 6600 6600 6600
-	&t 4640 0e40 4c40 4e00
-	&z 2640 c600 2640 c600
-	&j 6440 e200 44c0 08e0
+	&t 4e00 4640 0e40 4c40
+	&z c600 2640 0c60 4c80
+	&j 8e00 6440 0e20 44c0
 
 @blank-chr
 	ffff ffff ffff ffff
+	0000 0000 0000 0000
 @block-icn
 	7e81 8181 8181 817f
 	007f 7f7f 7f7f 7f7f
