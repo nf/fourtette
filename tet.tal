@@ -198,7 +198,9 @@ BRK
 	&draw
 
 	draw-bg
-	draw-well
+	;pos/well-x LDA2 .Screen/x DEO2
+	;pos/well-y LDA2 .Screen/y DEO2
+	;well #0042 ADD2 draw-well
 	draw-next
 	draw-score
 BRK
@@ -450,38 +452,41 @@ JMP2r
 	&score-w 06
 	&score-h 08
 
-@draw-well ( -- )
-	;pos/well-x LDA2 .Screen/x DEO2
-	;pos/well-y LDA2 .Screen/y DEO2
+@draw-well ( well* -- )
 	#01 .Screen/auto DEO
-	well_first_block_minus_1 ;well ADD2 &loop
-		INC2
+	#0000 ,&n STR2
+	&loop
+		,&n LDR2 INC2k ,&n STR2 DUP2
 		( check eol )
-		DUP #0f AND well_line_end GTH
+		#000f AND2 #000a EQU2
 			?&eol
 		( check bottom )
-		DUP2 #0ff0 AND2 well_last_line GTH2
+		#0ff0 AND2 #0140 EQU2
 			?&done
-		( draw blank or block? )
-		DUP2 LDA DUP #08 AND
+		( load well value )
+		DUP2 [ LIT2 &n $2 ] ADD2 LDA
+		( draw ghost? )
+		DUP #08 AND
 			?&ghost
+		( draw block? )
 		DUP #f0 AND
 			?&block
-		&blank
+		( draw blank. )
 			;blank-chr .Screen/addr DEO2
 			POP #40 .Screen/sprite DEO
-				!&loop
-		&block
-			draw-block
 				!&loop
 		&ghost
 			;ghost-icn .Screen/addr DEO2
 			POP #41 .Screen/sprite DEO
 				!&loop
+		&block
+			draw-block
+				!&loop
 		&eol
-			;pos/well-x LDA2 .Screen/x DEO2
+			POP2
+			.Screen/x DEI2 #0050 SUB2 .Screen/x DEO2
 			.Screen/y DEI2 #0008 ADD2 .Screen/y DEO2
-			#0005 ADD2
+			,&n LDR2 #0005 ADD2 ,&n STR2
 			!&loop
 	&done POP2
 JMP2r
