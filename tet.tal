@@ -56,7 +56,7 @@
 	#0100 .Screen/height DEO2
 
 	#30 ;on-frame/speed STA
-	#02 ;on-frame/freeze-time STA
+	#05 ;on-frame/freeze-time STA
 
 	init-well
 	new-cur-piece
@@ -103,9 +103,9 @@ BRK
 		?&rot-ok
 	( try kicks )
 	;kicks 
-		#00 [ LIT &rot-anti $1 ] #40 MUL ADD2
-		#00 .test/type LDZ #00 EQU #20 MUL ADD2
-		#00 .test/rot LDZ #08 MUL ADD2 
+		#00 .test/type LDZ #00 EQU #40 MUL ADD2
+		#00 .test/rot LDZ #10 MUL ADD2 
+		#00 [ LIT &rot-anti $1 ] #08 MUL ADD2
 		,&kick-addr STR2
 	#00 ,&kick-offs STR
 	&kick-loop
@@ -751,28 +751,24 @@ JMP2r
 	( z ) c600 2640 0c60 4c80
 	( j ) 8e00 6440 0e20 44c0
 @kicks
-	( clockwise )
 	( j, l, t, s, z )
-	ff00 ff01 00fe fffe ( 3 -> 0 )
-	ff00 ffff 0002 ff02 ( 0 -> 1 )
-	0100 0101 00fe 01fe ( 1 -> 2 )
-	0100 01ff 0002 0102 ( 2 -> 3 )
+	( 3>>0 ) ff00 ff01 00fe fffe
+	( 1>>0 ) 0100 0101 00fe 01fe
+	( 0>>1 ) ff00 ffff 0002 ff02
+	( 2>>1 ) ff00 ffff 0002 ff02
+	( 1>>2 ) 0100 0101 00fe 01fe
+	( 3>>2 ) ff00 ff01 00fe fffe
+	( 2>>3 ) 0100 01ff 0002 0102
+	( 0>>3 ) 0100 01ff 0002 0102
 	( i )
-	0100 fe00 0102 feff ( 3 -> 0 )
-	fe00 0100 fe01 01fe ( 0 -> 1 )
-	ff00 0200 fffe 0201 ( 1 -> 2 )
-	0200 ff00 02ff ff02 ( 2 -> 3 )
-	( anti )
-	( j, l, t, s, z )
-	0100 0101 00fe 01fe ( 1 -> 0 )
-	ff00 ffff 0002 ff02 ( 2 -> 1 )
-	ff00 ff01 00fe fffe ( 3 -> 2 )
-	0100 01ff 0002 0102 ( 0 -> 3 )
-	( i )
-	0200 ff00 02ff ff02 ( 1 -> 0 )
-	0100 fe00 0102 feff ( 2 -> 1 )
-	fe00 0100 fe01 01fe ( 3 -> 2 )
-	ff00 0200 fffe 0201 ( 0 -> 3 )
+	( 3>>0 ) 0100 fe00 0102 feff
+	( 1>>0 ) 0200 ff00 02ff ff02
+	( 0>>1 ) fe00 0100 fe01 01fe
+	( 2>>1 ) 0100 fe00 0102 feff
+	( 1>>2 ) ff00 0200 fffe 0201
+	( 3>>2 ) fe00 0100 fe01 01fe
+	( 2>>3 ) 0200 ff00 02ff ff02
+	( 0>>3 ) ff00 0200 fffe 0201
 
 @blank-chr
 	0000 0000 0000 0000
