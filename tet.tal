@@ -55,7 +55,7 @@
 	#0100 .Screen/width DEO2
 	#0100 .Screen/height DEO2
 
-	#30 ;on-frame/speed STA
+	#10 ;on-frame/speed STA
 	#05 ;on-frame/freeze-time STA
 
 	init-prng
@@ -151,9 +151,16 @@ BRK
 	#01 ,&inc-y STR
 
 	( gravity )
-	[ LIT &tick $1 ] INC
-	[ LIT &speed $1 ] MOD
-	DUP ,&tick STR
+	[ LIT &speed $1 ]
+		?&gravity-tick
+	.ghost clear-piece
+	.cur clear-piece
+	update-ghost
+	.cur .ghost copy-piece
+	#00 ;&update-cur STA
+	!&maybe-freeze
+	&gravity-tick
+	[ LIT &tick $1 ] INC ,&speed LDR MOD DUP ,&tick STR
 		?&no-tick
 	#00 ,&inc-y STR
 	&no-tick
@@ -195,6 +202,7 @@ BRK
 	freeze-cur-piece
 	new-piece
 	#00 ;&update-cur STA
+	#00 ,&frozen-time STR
 	( check if the new piece fits in the well, if not we died )
 	.cur try-piece
 		?&dead
@@ -349,7 +357,7 @@ JMP2r
 	#00 .cur/rot STZ
 	.next/type LDZ .cur/type STZ
 
-	#00 .next/x STZ
+	#01 .next/x STZ
 	#01 .next/y STZ
 	prng NIP #07 MOD .next/type STZ
 JMP2r
@@ -470,13 +478,13 @@ JMP2r
 	;well #0043 ADD2 #14 draw-well
 
 	( draw next piece in center of box )
-	;pos/next-x LDA2 #0008 ADD2
+	;pos/next-x LDA2
 	#00 .next/type LDZ DUP #00 NEQ SWP #03 NEQ AND #0004 MUL2 ADD2
 	.Screen/x DEO2
 	;pos/next-y LDA2 INC2
 	#00 .next/type LDZ #00 NEQ #0004 MUL2 ADD2
 	.Screen/y DEO2
-	;well-next #04 &next draw-well
+	;well-next #04 draw-well
 
 	draw-score
 
