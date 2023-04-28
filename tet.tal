@@ -45,7 +45,7 @@
 
 |0100 ( -> )
 	( theme ) 
-	;theme/cga theme/set
+	;theme/mono theme/set
 
 	( vectors )
 	;on-frame .Screen/vector DEO2
@@ -64,14 +64,10 @@
 BRK
 
 @on-frame ( -> )
-(
-	#04 button/pressed ?&p-sel
-		;draw-block/offs LDA INC #10 MOD ;draw-block/offs STA
-		&p-sel
-)
 	[ LIT &is-dead $1 ]
 		?&draw
 
+	( do we need to (not) re-set cur in well? )
 	#01 ;&update-cur STA
 
 	( compact if we have a reason to )
@@ -88,21 +84,41 @@ BRK
 	.test .cur copy-piece
 
 	( test rot change )
+	.cur/type LDZ #03 EQU ( b can't rotate )
+		?&rot-done
+	.cur/rot LDZ
+	#00 ,&rot-anti STR
 	#01 button/pressed ?&p-a
-		.test/rot LDZ #03 ADD #04 MOD .test/rot STZ
+		#01 ,&rot-anti STR
+		#03 ADD
 		&p-a
 	#02 button/pressed ?&p-b
-		.test/rot LDZ INC #04 MOD .test/rot STZ
+		#01 ADD
 		&p-b
-	.test/rot LDZ .cur/rot LDZ EQU
+	#04 MOD DUP .test/rot STZ .cur/rot LDZ EQU
 		?&rot-done
+	( try in place )
 	.test try-piece #00 EQU
 		?&rot-ok
-	( if rot failed, try moving up one square )
-	.test/y LDZ #01 SUB .test/y STZ
-	.test try-piece
-		?&rot-done
-	( rot can change, update cur )
+	( try kicks )
+	;kicks 
+		#00 [ LIT &rot-anti $1 ] #20 MUL ADD2
+		#00 .test/type LDZ #00 EQU #20 MUL ADD2
+		#00 .test/rot LDZ #08 MUL ADD2 
+		,&kick-addr STR2
+	#00 ,&kick-offs STR
+	&kick-loop
+		[ LIT2 &kick-addr $2 ] #00 [ LIT &kick-offs $1 ] ADD2 INCk2
+		LDA .test/y LDZ ADD .test/y STZ
+		LDA .test/x LDZ ADD .test/x STZ
+		.test try-piece #00 EQU
+			?&rot-ok
+		.cur/x LDZ .test/x STZ 
+		.cur/y LDZ .test/y STZ
+		,&kick-offs LDR #02 ADD DUP ,&kick-offs STR #07 GTH
+			?&rot-done
+		!&kick-loop
+	( rot success )
 	&rot-ok
 	.ghost clear-piece
 	.cur clear-piece
@@ -110,7 +126,6 @@ BRK
 	#00 ;&frozen-time STA
 	#00 ;&update-cur STA
 	&rot-done
-
 	.cur/rot LDZ .test/rot STZ
 
 	( test x change )
@@ -726,13 +741,36 @@ JMP2r
 	&score "SCORE $1
 	&next "NEXT $1
 @pieces
-	&i 0f00 2222 00f0 4444 
-	&s 6c00 4620 06c0 8c40
-	&l 2e00 4460 0e80 c440
-	&b 6600 6600 6600 6600
-	&t 4e00 4640 0e40 4c40
-	&z c600 2640 0c60 4c80
-	&j 8e00 6440 0e20 44c0
+	( i ) 0f00 2222 00f0 4444 
+	( s ) 6c00 4620 06c0 8c40
+	( l ) 2e00 4460 0e80 c440
+	( b ) 6600 6600 6600 6600
+	( t ) 4e00 4640 0e40 4c40
+	( z ) c600 2640 0c60 4c80
+	( j ) 8e00 6440 0e20 44c0
+@kicks
+	( clockwise )
+	( j, l, t, s, z )
+	ff00 ff01 00fe fffe ( 3 -> 0 )
+	ff00 ffff 0002 ff02 ( 0 -> 1 )
+	0100 0101 00fe 01fe ( 1 -> 2 )
+	0100 01ff 0002 0102 ( 2 -> 3 )
+	( i )
+	ff00 0200 fffe 0201 ( 3 -> 0 )
+	fe00 0100 fe01 01fe ( 0 -> 1 )
+	ff00 0200 fffe 0201 ( 1 -> 2 )
+	0200 ff00 02ff fe02 ( 2 -> 3 )
+	( anti )
+	( j, l, t, s, z )
+	0100 0101 00fe 01fe ( 1 -> 0 )
+	ff00 ffff 0002 ff02 ( 2 -> 1 )
+	ff00 ff01 00fe fffe ( 3 -> 2 )
+	0100 01ff 0002 0102 ( 0 -> 3 )
+	( i )
+	0200 ff00 02ff ff02 ( 1 -> 0 )
+	0100 fe00 0102 feff ( 2 -> 1 )
+	fe00 0100 fe01 02fe ( 3 -> 2 )
+	0100 fe00 0102 feff ( 0 -> 3 )
 
 @blank-chr
 	ffff ffff ffff ffff
