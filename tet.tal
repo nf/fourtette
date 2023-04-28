@@ -56,6 +56,7 @@
 	#0100 .Screen/height DEO2
 
 	#30 ;on-frame/speed STA
+	#02 ;on-frame/freeze-time STA
 
 	init-well
 	new-cur-piece
@@ -102,7 +103,7 @@ BRK
 		?&rot-ok
 	( try kicks )
 	;kicks 
-		#00 [ LIT &rot-anti $1 ] #20 MUL ADD2
+		#00 [ LIT &rot-anti $1 ] #40 MUL ADD2
 		#00 .test/type LDZ #00 EQU #20 MUL ADD2
 		#00 .test/rot LDZ #08 MUL ADD2 
 		,&kick-addr STR2
@@ -185,7 +186,7 @@ BRK
 	#00 ;&update-cur STA
 	!&maybe-update-cur
 	&maybe-freeze
-	[ LIT &frozen-time $1 ] INC DUP ,&frozen-time STR #08 LTH
+	[ LIT &frozen-time $1 ] INC DUP ,&frozen-time STR [ LIT &freeze-time $1 ] LTH
 		?&maybe-update-cur
 	( freeze the current piece, create a new piece )
 	&freeze
@@ -757,10 +758,10 @@ JMP2r
 	0100 0101 00fe 01fe ( 1 -> 2 )
 	0100 01ff 0002 0102 ( 2 -> 3 )
 	( i )
-	ff00 0200 fffe 0201 ( 3 -> 0 )
+	0100 fe00 0102 feff ( 3 -> 0 )
 	fe00 0100 fe01 01fe ( 0 -> 1 )
 	ff00 0200 fffe 0201 ( 1 -> 2 )
-	0200 ff00 02ff fe02 ( 2 -> 3 )
+	0200 ff00 02ff ff02 ( 2 -> 3 )
 	( anti )
 	( j, l, t, s, z )
 	0100 0101 00fe 01fe ( 1 -> 0 )
@@ -770,8 +771,8 @@ JMP2r
 	( i )
 	0200 ff00 02ff ff02 ( 1 -> 0 )
 	0100 fe00 0102 feff ( 2 -> 1 )
-	fe00 0100 fe01 02fe ( 3 -> 2 )
-	0100 fe00 0102 feff ( 0 -> 3 )
+	fe00 0100 fe01 01fe ( 3 -> 2 )
+	ff00 0200 fffe 0201 ( 0 -> 3 )
 
 @blank-chr
 	0000 0000 0000 0000
