@@ -461,8 +461,6 @@ JMP2r
 	&score-h 08
 
 @draw-all
-	draw-bg
-
 	( draw well )
 	;pos/well-x LDA2 .Screen/x DEO2
 	;pos/well-y LDA2 .Screen/y DEO2
@@ -478,6 +476,8 @@ JMP2r
 	;well-next #04 &next draw-well
 
 	draw-score
+
+	draw-bg
 JMP2r
 
 @draw-well ( well* height -- )
@@ -500,8 +500,9 @@ JMP2r
 		DUP #f0 AND
 			?&block
 		( draw blank. )
+			POP 
 			;blank-chr .Screen/addr DEO2
-			POP #40 .Screen/sprite DEO
+			#40 .Screen/sprite DEO
 				!&loop
 		&ghost
 			POP
@@ -522,7 +523,7 @@ JMP2r
 @draw-block
 	#07 AND DUP
 	#04 MOD #00 SWP #0010 MUL2 ;blocks-icn ADD2 .Screen/addr DEO2
-	#03 MOD #03 ADD #80 ORA .Screen/sprite DEO
+	#03 MOD #03 ADD #c0 ORA .Screen/sprite DEO
 JMP2r
 
 @draw-score ( -- )
@@ -773,7 +774,7 @@ JMP2r
 	0100 fe00 0102 feff ( 0 -> 3 )
 
 @blank-chr
-	ffff ffff ffff ffff
+	0000 0000 0000 0000
 	0000 0000 0000 0000
 @block-icn
 	7e81 8181 8181 817f
