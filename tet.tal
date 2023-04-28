@@ -45,7 +45,7 @@
 
 |0100 ( -> )
 	( theme ) 
-	;theme/mono theme/set
+	;theme/cga theme/set
 
 	( vectors )
 	;on-frame .Screen/vector DEO2
@@ -554,12 +554,12 @@ JMP2r
 	;pos/well-h LDA
 	#8a draw-box 
 
-	;bg/dots .Screen/addr DEO2
+	;bg/stripes .Screen/addr DEO2
 	;pos/well-x LDA2 .Screen/x DEO2
 	;pos/well-y LDA2 .Screen/y DEO2
 	;pos/well-w LDA
 	;pos/well-h LDA
-	#03 #07 draw-texture
+	#03 draw-texture
 
 	( next piece )
 	;pos/next-x LDA2 .Screen/x DEO2
@@ -573,7 +573,7 @@ JMP2r
 	;pos/next-y LDA2 .Screen/y DEO2
 	;pos/next-w LDA
 	;pos/next-h LDA
-	#00 #01 draw-texture
+	#00 draw-texture
 
 	;pos/next-x LDA2 #0008 ADD2
 	;pos/next-y LDA2 #0003 ADD2 
@@ -591,7 +591,7 @@ JMP2r
 	;pos/score-y LDA2 .Screen/y DEO2
 	;pos/score-w LDA
 	;pos/score-h LDA
-	#03 #04 draw-texture
+	#03 draw-texture
 
 	;pos/score-x LDA2 #0004 ADD2
 	;pos/score-y LDA2 #0004 ADD2 
@@ -650,13 +650,12 @@ JMP2r
 		POP2
 	JMP2r
 
-@draw-texture ( w h col mod -- )
-	;&mod STA ;&col STA SWP DUP ;&w STA MUL
+@draw-texture ( w h col -- )
+	;&col STA SWP DUP ;&w STA MUL
 	#01 .Screen/auto DEO
 	&loop
 		#01 SUB
-		DUP [ LIT &mod $1 ] MOD #00 EQU #70 SFT 
-		OVR #08 MOD #42 SFT ORA 
+		DUP #0f MOD #43 SFT #30 AND
 		[ LIT &col $1 ] ORA .Screen/sprite DEO
 		DUP #00 EQU
 			?&done
@@ -717,6 +716,8 @@ JMP2r
 		LDA2 .System/r DEO2 
 	JMP2r
 	&mono    c359 c359 d46a
+	&reverse 2d94 2d94 3ea5
+	&cga     0f5a 0ff0 0ffa
 	&cga-ish 0ea5 0cf2 09d9 
 
 @strings
