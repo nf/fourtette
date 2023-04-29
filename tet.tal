@@ -59,6 +59,7 @@
 
 	init-prng
 	init-well
+	new-piece ( first one is always an i-piece, discard it )
 	new-piece
 	set-cur-piece
 	set-next-piece
@@ -340,7 +341,7 @@ JMP2r
 
 	#01 .next/x STZ
 	#01 .next/y STZ
-	prng NIP #07 MOD .next/type STZ
+	next-piece-type .next/type STZ
 JMP2r
 
 @set-piece ( piece mask addr* -- )
@@ -433,6 +434,33 @@ JMP2r
 	#0000 GTH2
 		?&loop
 JMP2r
+
+@next-piece-type
+	[ LIT &len $1 ]
+		?&pop
+	( fill bag 0-6 )
+	;&bag #00 &fill
+		ROT ROT STAk
+		INC2 ROT INC DUP #07 LTH
+			?&fill
+	,&len STR POP2
+	( shuffle bag )
+	;&bag ,&a STR2
+	#06 &shuffle
+		prng &x NIP OVR INC MOD #00 SWP ,&a LDR2 ADD2 ,&b STR2
+		[ LIT2 &a $2 ] LDA ,&tmp STR
+		[ LIT2 &b $2 ] LDA ,&a LDR2 STA
+		[ LIT &tmp $1 ] ,&b LDR2 STA
+		,&a LDR2 INC2 ,&a STR2
+		#01 SUB DUP
+			?&shuffle
+	POP
+	( pop type from bag )
+	&pop
+	,&len LDR #01 SUB DUP ,&len STR
+	#00 SWP ;&bag ADD2 LDA
+JMP2r
+	[ &bag $7 ]
 
 ( draw game state )
 
