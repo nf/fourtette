@@ -35,6 +35,8 @@
 @ghost &type $1 &rot $1 &x $1 &y $1
 ( the next piece to enter the field )
 @next  &type $1 &rot $1 &x $1 &y $1
+( the hold piece )
+@hold  &type $1 &rot $1 &x $1 &y $1 &held $1
 
 @score
 	&level $1
@@ -59,7 +61,7 @@
 
 	init-prng
 	init-well
-	new-piece ( first one is always an i-piece, discard it )
+	new-piece ( first piece is always an i-piece, discard it )
 	new-piece
 	set-cur-piece
 	set-next-piece
@@ -73,6 +75,30 @@ BRK
 		?&no-compact
 	compact-well ,&is-compact STR 
 	&no-compact
+	
+	( swap hold piece )
+	#04 button/pressed #00 EQU
+		?&hold-done
+	( only allow one swap per freeze )
+	[ LIT &hold-swapped $1 ]
+		?&hold-done
+	( put cur piece in hold )
+	#01 ,&hold-swapped STR
+	.ghost clear-piece
+	.cur clear-piece
+	[ LIT &nothing-held 01 ] #00 EQU
+		?&hold-swap
+	( no piece held yet )
+	#00 ,&nothing-held STR 
+	.cur/type LDZ .hold/type STZ
+	set-hold-piece
+	!&make-new-piece
+	( swap hold and cur )
+	&hold-swap
+	init-cur-pos
+	.cur/type LDZ .hold/type LDZ .cur/type STZ .hold/type STZ
+	set-hold-piece
+	&hold-done
 
 	.test .cur copy-piece
 
@@ -112,7 +138,7 @@ BRK
 	.ghost clear-piece
 	.cur clear-piece
 	.cur .test copy-piece
-	#00 ;&hold-timer STA
+	#00 ;&freeze-timer STA
 	&rot-done
 	.cur/rot LDZ .test/rot STZ
 
@@ -127,7 +153,7 @@ BRK
 	.ghost clear-piece
 	.cur clear-piece
 	.cur .test copy-piece
-	#00 ;&hold-timer STA
+	#00 ;&freeze-timer STA
 	&no-x
 
 	( up button - hard drop )
@@ -148,7 +174,7 @@ BRK
 	.cur clear-piece
 	update-ghost
 	.cur .ghost copy-piece
-	!&run-hold-timer
+	!&run-freeze-timer
 	( normal drop - descend 1 row every &speed frames )
 	&gravity-tick
 	[ LIT &tick $1 ] INC ,&speed LDR MOD DUP ,&tick STR #00 EQU
@@ -165,7 +191,7 @@ BRK
 	.test .cur copy-piece
 	.test/y LDZ INC .test/y STZ
 	.test try-piece
-		?&run-hold-timer
+		?&run-freeze-timer
 	( y changed )
 	.cur clear-piece
 	.cur .test copy-piece
@@ -174,18 +200,21 @@ BRK
 
 	( check if the freeze timer has expired, if running )
 	&maybe-freeze
-	[ LIT &hold-timer $1 ] #00 EQU
+	[ LIT &freeze-timer $1 ] #00 EQU
 		?&update
-	&run-hold-timer
-	,&hold-timer LDR #1e GTH
+	&run-freeze-timer
+	,&freeze-timer LDR #1e GTH
 		?&freeze
-	,&hold-timer LDR INC ,&hold-timer STR
+	,&freeze-timer LDR INC ,&freeze-timer STR
 	!&update
 
-	( freeze the current piece, create a new piece )
+	( freeze the current piece )
 	&freeze
-	#00 ,&hold-timer STR
 	freeze-cur-piece
+	( create a new piece )
+	&make-new-piece
+	#00 ,&freeze-timer STR
+	#00 ;&hold-swapped STA
 	new-piece
 	set-next-piece
 	( if the new piece doesn't fit, die )
@@ -193,7 +222,7 @@ BRK
 		?&die
 	#00 ;&is-compact STA ( compact next frame )
 
-	( update the current piece enad ghost ) 
+	( update the current piece and ghost ) 
 	&update
 	update-ghost
 	set-ghost-piece
@@ -242,6 +271,10 @@ JMP2r
 JMP2r
 
 @init-well ( -- )
+	#01 .next/x STZ
+	#01 .next/y STZ
+	#01 .hold/x STZ
+	#01 .hold/y STZ
 	;well &loop
 		DUP2 #0ff0 AND2 well_last_line GTH2
 			?&block
@@ -333,14 +366,15 @@ JMP2r
 	LDZ SWP STZ
 JMP2r
 
-@new-piece ( -- )
+@init-cur-pos ( -- )
 	#06 .cur/x STZ
 	#02 .cur/y STZ
 	#00 .cur/rot STZ
-	.next/type LDZ .cur/type STZ
+JMP2r
 
-	#01 .next/x STZ
-	#01 .next/y STZ
+@new-piece ( -- )
+	init-cur-pos
+	.next/type LDZ .cur/type STZ
 	next-piece-type .next/type STZ
 JMP2r
 
@@ -385,8 +419,20 @@ JMP2r
 	INC2 DUP2 ;well-next/end LTH2
 		?&clear
 	POP2
-	&set
 	.next #17 ;well-next set-piece
+JMP2r
+
+@clear-hold-piece ( -- )
+	;well-hold &clear
+		DUP2 #00 ROT ROT STA
+	INC2 DUP2 ;well-hold/end LTH2
+		?&clear
+	POP2
+JMP2r
+
+@set-hold-piece ( -- )
+	clear-hold-piece
+	.hold #17 ;well-hold set-piece
 JMP2r
 
 @piece-bits ( piece -- piece-bits* )
@@ -475,6 +521,11 @@ JMP2r
 	&next-w 06
 	&next-h 04
 
+	&hold-x 00b0
+	&hold-y 0030
+	&hold-w 06
+	&hold-h 04
+
 	&score-x 0020
 	&score-y 0030
 	&score-w 06
@@ -486,18 +537,20 @@ JMP2r
 	;pos/well-y LDA2 .Screen/y DEO2
 	;well #0043 ADD2 #14 draw-well
 
-	( draw next piece in center of box )
-	;pos/next-x LDA2
-	#00 .next/type LDZ DUP #00 NEQ SWP #03 NEQ AND #0004 MUL2 ADD2
-	.Screen/x DEO2
-	;pos/next-y LDA2 INC2
-	#00 .next/type LDZ #00 NEQ #0004 MUL2 ADD2
-	.Screen/y DEO2
-	;well-next #04 draw-well
+	;well-next ;pos/next-x LDA2 ;pos/next-y LDA2 .next/type LDZ draw-piece
+	;well-hold ;pos/hold-x LDA2 ;pos/hold-y LDA2 .hold/type LDZ draw-piece
 
 	draw-score
 
 	draw-bg
+JMP2r
+
+( draw next piece in center of hold or next box )
+@draw-piece ( well* box-x* box-y* type -- )
+	,&type STR SWP2
+	( box-x ) #00 [ LIT &type $1 ] DUP #00 NEQ SWP #03 NEQ AND #0004 MUL2 ADD2 .Screen/x DEO2
+	( box-y ) INC2 #00 ,&type LDR #00 NEQ #0004 MUL2 ADD2 .Screen/y DEO2
+	#04 draw-well
 JMP2r
 
 @draw-well ( well* height -- )
@@ -615,6 +668,24 @@ JMP2r
 	;pos/next-x LDA2 #0008 ADD2
 	;pos/next-y LDA2 #0003 ADD2 
 	;strings/next #02 draw-str
+
+	( hold piece )
+	;pos/hold-x LDA2 .Screen/x DEO2
+	;pos/hold-y LDA2 .Screen/y DEO2
+	;pos/hold-w LDA
+	;pos/hold-h LDA
+	#8a draw-box
+
+	;blank-chr .Screen/addr DEO2
+	;pos/hold-x LDA2 .Screen/x DEO2
+	;pos/hold-y LDA2 .Screen/y DEO2
+	;pos/hold-w LDA
+	;pos/hold-h LDA
+	#00 draw-texture
+
+	;pos/hold-x LDA2 #0008 ADD2
+	;pos/hold-y LDA2 #0003 ADD2 
+	;strings/hold #02 draw-str
 
 	( score )
 	;pos/score-x LDA2 .Screen/x DEO2
@@ -792,6 +863,7 @@ JMP2r
 	&lines "LINES $1
 	&score "SCORE $1
 	&next "NEXT $1
+	&hold "HOLD $1
 @pieces
 	( i ) 0f00 2222 00f0 4444 
 	( s ) 6c00 4620 06c0 8c40
@@ -905,6 +977,7 @@ JMP2r
 
 @well $200 &end
 @well-next $40 &end
+@well-hold $40 &end
 
 @font ( atari8.uf1 )
 	0000 0000 0000 0000 6060 6060 6000 6000
