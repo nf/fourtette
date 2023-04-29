@@ -513,9 +513,10 @@ JMP2r
 JMP2r
 
 @draw-block
-	#07 AND DUP
-	#04 MOD #00 SWP #0010 MUL2 ;blocks-icn ADD2 .Screen/addr DEO2
-	#03 MOD #03 ADD #c0 ORA .Screen/sprite DEO
+	#07 AND #03 MUL #00 SWP ;piece-sprites ADD2
+	INC2k INC2 LDA ROT ROT LDA2
+	.Screen/addr DEO2
+	.Screen/sprite DEO
 JMP2r
 
 @draw-score ( -- )
@@ -749,6 +750,15 @@ JMP2r
 	&cga     0f5a 0ff0 0ffa
 	&cga-ish 0ea5 0cf2 09d9 
 
+@piece-sprites ( addr* color )
+	( i ) =blocks-icn/a c3
+	( s ) =blocks-icn/b c3
+	( l ) =blocks-icn/c c3
+	( b ) =blocks-icn/d c3
+	( t ) =blocks-icn/a c1
+	( z ) =blocks-icn/b c1
+	( j ) =blocks-icn/c c1
+
 @strings
 	&level "LEVEL $1
 	&lines "LINES $1
@@ -798,13 +808,13 @@ JMP2r
 	&c
 	007e 425a 5a42 7e00
 	ff81 bda5 a5bd 81ff
-	&e
+	&d
 	007e 7e7e 7e7e 7e00
 	ffab d5ab d5ab d5ff
-	&f
+	&x
 	007e 7e7e 7e7e 7e00
 	ff99 b3e7 cd99 b3ff
-	&d
+	&y
 	007c 7a76 6e5e 3e00
 	ff83 8589 91a1 c1ff
 @ghost-icn
