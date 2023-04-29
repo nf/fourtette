@@ -56,7 +56,6 @@
 	#0100 .Screen/height DEO2
 
 	#10 ;on-frame/speed STA
-	#05 ;on-frame/freeze-time STA
 
 	init-prng
 	init-well
@@ -69,35 +68,22 @@ BRK
 	[ LIT &is-dead $1 ]
 		?&draw
 
-	( do we need to (not) re-set cur in well? )
-	#01 ;&update-cur STA
-
-	( compact if we have a reason to )
 	[ LIT &is-compact $1 ]
-		?&p-compact
-	compact-well
-	( remember the result, avoid duplicate work )
-	DUP ,&is-compact STR 
-		?&p-compact
-	( compact mutated, so re-set the piece which was wiped )
-	#00 ;&update-cur STA
-	&p-compact
+		?&no-compact
+	compact-well ,&is-compact STR 
+	&no-compact
 
 	.test .cur copy-piece
 
-	( test rot change )
+	( handle rot change )
 	.cur/type LDZ #03 EQU ( b can't rotate )
 		?&rot-done
-	.cur/rot LDZ
-	#00 ,&rot-anti STR
-	#01 button/pressed ?&p-a
-		#01 ,&rot-anti STR
-		#03 ADD
-		&p-a
-	#02 button/pressed ?&p-b
-		#01 ADD
-		&p-b
-	#04 MOD DUP .test/rot STZ .cur/rot LDZ EQU
+	#01 button/pressed #03 MUL
+	#02 button/pressed 
+	ADD
+	DUP #03 EQU ,&rot-anti STR
+	.cur/rot LDZ ADD #04 MOD
+	DUP .test/rot STZ .cur/rot LDZ EQU
 		?&rot-done
 	( try in place )
 	.test try-piece #00 EQU
@@ -120,109 +106,104 @@ BRK
 		,&kick-offs LDR #02 ADD DUP ,&kick-offs STR #07 GTH
 			?&rot-done
 		!&kick-loop
-	( rot success )
+	( rot changed )
 	&rot-ok
 	.ghost clear-piece
 	.cur clear-piece
 	.cur .test copy-piece
-	#00 ;&frozen-time STA
-	#00 ;&update-cur STA
+	#00 ;&hold-timer STA
 	&rot-done
 	.cur/rot LDZ .test/rot STZ
 
-	( test x change )
-	#40 button/pressed ?&p-lt
-		.test/x LDZ #01 SUB .test/x STZ
-		&p-lt
-	#80 button/pressed ?&p-rt
-		.test/x LDZ INC .test/x STZ
-		&p-rt 
-	.test/x LDZ .cur/x LDZ EQU
-		?&x-done
+	( handle x change )
+	#80 button/pressed ( right )
+	#40 button/pressed SUB ( left )
+	DUP .cur/x LDZ ADD .test/x STZ #00 EQU
+		?&no-x
 	.test try-piece
-		?&x-done
-	( x can change, update cur )
+		?&no-x
+	( x changed )
 	.ghost clear-piece
 	.cur clear-piece
 	.cur .test copy-piece
-	#00 ;&update-cur STA
-	&x-done
+	#00 ;&hold-timer STA
+	&no-x
 
-	#01 ,&inc-y STR
+	( up button - hard drop )
+	#10 button/pressed #00 EQU
+		?&no-up
+	.ghost clear-piece
+	.cur clear-piece
+	update-ghost
+	.cur .ghost copy-piece
+	!&freeze
+	&no-up
 
 	( gravity )
 	[ LIT &speed $1 ]
 		?&gravity-tick
+	( instant drop - like hard drop but don't freeze immediately )
 	.ghost clear-piece
 	.cur clear-piece
 	update-ghost
 	.cur .ghost copy-piece
-	#00 ;&update-cur STA
-	!&maybe-freeze
+	!&run-hold-timer
+	( normal drop - descend 1 row every &speed frames )
 	&gravity-tick
-	[ LIT &tick $1 ] INC ,&speed LDR MOD DUP ,&tick STR
-		?&no-tick
-	#00 ,&inc-y STR
-	&no-tick
+	[ LIT &tick $1 ] INC ,&speed LDR MOD DUP ,&tick STR #00 EQU
+		?&inc-y
 
-	( down button )
+	( down button - soft drop )
 	#20 button/held
-		?&no-down
-	#00 ,&inc-y STR
-	&no-down
+		?&inc-y
 
-	( up button )
-	#10 button/pressed 
-		?&test-y
-	.ghost clear-piece
-	update-ghost
-	.cur clear-piece
-	.cur .ghost copy-piece
-	!&freeze
+	!&maybe-freeze
 
-	( test y change )
-	&test-y
-	[ LIT &inc-y $1 ]
-		?&maybe-update-cur
+	( try to increment y )
+	&inc-y
 	.test .cur copy-piece
 	.test/y LDZ INC .test/y STZ
 	.test try-piece
-		?&maybe-freeze
-	( y can change, update cur )
+		?&run-hold-timer
+	( y changed )
 	.cur clear-piece
 	.cur .test copy-piece
-	#00 ,&frozen-time STR
-	#00 ;&update-cur STA
-	!&maybe-update-cur
+	( ghost is unchanged )
+	!&update
+
+	( check if the freeze timer has expired, if running )
 	&maybe-freeze
-	[ LIT &frozen-time $1 ] INC DUP ,&frozen-time STR [ LIT &freeze-time $1 ] LTH
-		?&maybe-update-cur
+	[ LIT &hold-timer $1 ] #00 EQU
+		?&update
+	&run-hold-timer
+	,&hold-timer LDR #1e GTH
+		?&freeze
+	,&hold-timer LDR INC ,&hold-timer STR
+	!&update
+
 	( freeze the current piece, create a new piece )
 	&freeze
+	#00 ,&hold-timer STR
 	freeze-cur-piece
 	new-piece
-	#00 ;&update-cur STA
-	#00 ,&frozen-time STR
-	( check if the new piece fits in the well, if not we died )
-	.cur try-piece
-		?&dead
 	set-next-piece
-	( there are new frozen blocks, compact next frame )
-	#00 ;&is-compact STA
+	( if the new piece doesn't fit, die )
+	.cur try-piece
+		?&die
+	#00 ;&is-compact STA ( compact next frame )
 
-	&maybe-update-cur
-	[ LIT &update-cur $1 ]
-		?&draw
+	( update the current piece enad ghost ) 
+	&update
 	update-ghost
 	set-ghost-piece
 	set-cur-piece
 	!&draw
 
-	&dead
+	( game over )
+	&die
 	#01 ;&is-dead STA
 
 	&draw
-
 	draw-all
 BRK
 
@@ -242,21 +223,21 @@ JMP2r
 	,&state STR
 	[ LIT &debounce $1 ] AND ,&debounce STR
 BRK
-&held ( code -- not-held )
-	DUP ,&state LDR AND EOR
+&held ( code -- held )
+	DUP ,&state LDR AND EOR #00 EQU
 JMP2r
-&pressed ( code -- not-pressed )
+&pressed ( code -- pressed )
 	DUP ,&state LDR AND
 		?&pressed-debounce
 	&not-pressed
-	POP #01
+	POP #00
 JMP2r
 &pressed-debounce
 	DUP
 	,&debounce LDR AND
 		?&not-pressed
 	,&debounce LDR ORA ,&debounce STR
-	#00
+	#01
 JMP2r
 
 @init-well ( -- )
