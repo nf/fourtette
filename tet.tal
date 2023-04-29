@@ -409,12 +409,16 @@ JMP2r
 		[ LIT &blocked $1 ] ORA ,&blocked STR
 	JMP2r
 
-@set-next-piece ( -- )
+@clear-next-piece ( -- )
 	;well-next &clear
 		DUP2 #00 ROT ROT STA
 	INC2 DUP2 ;well-next/end LTH2
 		?&clear
 	POP2
+JMP2r
+
+@set-next-piece ( -- )
+	clear-next-piece
 	.next #17 ;well-next set-piece
 JMP2r
 
@@ -640,12 +644,12 @@ JMP2r
 	;pos/well-h LDA
 	#8a draw-box 
 
-	;bg/stripes .Screen/addr DEO2
+	;blank-chr .Screen/addr DEO2
 	;pos/well-x LDA2 .Screen/x DEO2
 	;pos/well-y LDA2 .Screen/y DEO2
 	;pos/well-w LDA
 	;pos/well-h LDA
-	#03 draw-texture
+	#00 draw-texture
 
 	( next piece )
 	;pos/next-x LDA2 .Screen/x DEO2
@@ -690,12 +694,12 @@ JMP2r
 	;pos/score-h LDA
 	#8a draw-box
 
-	;bg/dots2 .Screen/addr DEO2
+	;blank-chr .Screen/addr DEO2
 	;pos/score-x LDA2 .Screen/x DEO2
 	;pos/score-y LDA2 .Screen/y DEO2
 	;pos/score-w LDA
 	;pos/score-h LDA
-	#03 draw-texture
+	#00 draw-texture
 
 	;pos/score-x LDA2 #0004 ADD2
 	;pos/score-y LDA2 #0004 ADD2 
