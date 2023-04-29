@@ -69,7 +69,7 @@ BRK
 
 @on-frame ( -> )
 	[ LIT &is-dead $1 ]
-		?&draw
+		?game-over
 
 	.ghost clear-piece
 	.cur clear-piece
@@ -203,12 +203,33 @@ BRK
 		set-cur-piece
 			!&draw
 
-	( game over )
 	&die
 		#01 ;&is-dead STA
+		#0180 ;game-over/n STA2
 
 	&draw
 		draw-all
+BRK
+
+@game-over
+	[ LIT2 &n $2 ] #0000 EQU2
+		?&draw
+	,&n LDR2 #0001 SUB2 DUP2 ,&n STR2
+	;well ADD2 DUP #07 MOD #10 ORA 
+	,&n LDR2 #00d0 LTH2 
+	,&n LDR2 #00f0 GTH2
+		EOR MUL
+	ROT ROT STA
+
+	&draw
+	draw-all
+
+	,&n LDR2 #00d0 GTH2
+		?&done
+	;pos/well-x LDA2 #0004 ADD2
+	;pos/well-y LDA2 #004d ADD2 
+	;strings/game-over #41 draw-str
+	&done
 BRK
 
 @update-ghost
@@ -545,6 +566,7 @@ JMP2r
 	draw-bg
 JMP2r
 
+
 ( draw next piece in center of hold or next box )
 @draw-piece ( well* box-x* box-y* type -- )
 	,&type STR SWP2
@@ -864,6 +886,7 @@ JMP2r
 	&score "SCORE $1
 	&next "NEXT $1
 	&hold "HOLD $1
+	&game-over "GAME 20 "OVER $1
 @pieces
 	( i ) 0f00 2222 00f0 4444 
 	( s ) 6c00 4620 06c0 8c40
