@@ -71,6 +71,9 @@ BRK
 	[ LIT &is-dead $1 ]
 		?&draw
 
+	.ghost clear-piece
+	.cur clear-piece
+
 	[ LIT &is-compact $1 ]
 		?&no-compact
 	compact-well ,&is-compact STR 
@@ -84,15 +87,13 @@ BRK
 		?&hold-done
 	( put cur piece in hold )
 	#01 ,&hold-swapped STR
-	.ghost clear-piece
-	.cur clear-piece
-	[ LIT &nothing-held 01 ] #00 EQU
+	[ LIT &not-held 01 ] #00 EQU
 		?&hold-swap
 	( no piece held yet )
-	#00 ,&nothing-held STR 
+	#00 ,&not-held STR 
 	.cur/type LDZ .hold/type STZ
 	set-hold-piece
-	!&make-new-piece
+		!&make-new-piece
 	( swap hold and cur )
 	&hold-swap
 	init-cur-pos
@@ -116,31 +117,13 @@ BRK
 	.test try-piece #00 EQU
 		?&rot-ok
 	( try kicks )
-	;kicks 
-		#00 .test/type LDZ #00 EQU #40 MUL ADD2
-		#00 .test/rot LDZ #10 MUL ADD2 
-		#00 [ LIT &rot-anti $1 ] #08 MUL ADD2
-		,&kick-addr STR2
-	#00 ,&kick-offs STR
-	&kick-loop
-		[ LIT2 &kick-addr $2 ] #00 [ LIT &kick-offs $1 ] ADD2 INCk2
-		LDA .test/y LDZ ADD .test/y STZ
-		LDA .test/x LDZ ADD .test/x STZ
-		.test try-piece #00 EQU
-			?&rot-ok
-		.cur/x LDZ .test/x STZ 
-		.cur/y LDZ .test/y STZ
-		,&kick-offs LDR #02 ADD DUP ,&kick-offs STR #07 GTH
-			?&rot-done
-		!&kick-loop
+	[ LIT &rot-anti $1 ] try-kick
+		?&rot-done
 	( rot changed )
 	&rot-ok
-	.ghost clear-piece
-	.cur clear-piece
 	.cur .test copy-piece
 	#00 ;&freeze-timer STA
 	&rot-done
-	.cur/rot LDZ .test/rot STZ
 
 	( handle x change )
 	#80 button/pressed ( right )
@@ -150,8 +133,6 @@ BRK
 	.test try-piece
 		?&no-x
 	( x changed )
-	.ghost clear-piece
-	.cur clear-piece
 	.cur .test copy-piece
 	#00 ;&freeze-timer STA
 	&no-x
@@ -159,22 +140,18 @@ BRK
 	( up button - hard drop )
 	#10 button/pressed #00 EQU
 		?&no-up
-	.ghost clear-piece
-	.cur clear-piece
 	update-ghost
 	.cur .ghost copy-piece
-	!&freeze
+		!&freeze
 	&no-up
 
 	( gravity )
 	[ LIT &speed $1 ]
 		?&gravity-tick
 	( instant drop - like hard drop but don't freeze immediately )
-	.ghost clear-piece
-	.cur clear-piece
 	update-ghost
 	.cur .ghost copy-piece
-	!&run-freeze-timer
+		!&run-freeze-timer
 	( normal drop - descend 1 row every &speed frames )
 	&gravity-tick
 	[ LIT &tick $1 ] INC ,&speed LDR MOD DUP ,&tick STR #00 EQU
@@ -188,62 +165,81 @@ BRK
 
 	( try to increment y )
 	&inc-y
-	.test .cur copy-piece
-	.test/y LDZ INC .test/y STZ
-	.test try-piece
-		?&run-freeze-timer
-	( y changed )
-	.cur clear-piece
-	.cur .test copy-piece
-	( ghost is unchanged )
-	!&update
-
+		.test .cur copy-piece
+		.test/y LDZ INC .test/y STZ
+		.test try-piece
+			?&run-freeze-timer ( blocked )
+		( y changed )
+		.cur .test copy-piece
+		( ghost is unchanged )
+		!&update
 	( check if the freeze timer has expired, if running )
 	&maybe-freeze
-	[ LIT &freeze-timer $1 ] #00 EQU
-		?&update
-	&run-freeze-timer
-	,&freeze-timer LDR #1e GTH
-		?&freeze
-	,&freeze-timer LDR INC ,&freeze-timer STR
-	!&update
-
+		[ LIT &freeze-timer $1 ] #00 EQU
+			?&update
+		&run-freeze-timer
+		,&freeze-timer LDR #1e GTH
+			?&freeze
+		,&freeze-timer LDR INC ,&freeze-timer STR
+			!&update
 	( freeze the current piece )
 	&freeze
-	freeze-cur-piece
+		freeze-cur-piece
 	( create a new piece )
 	&make-new-piece
-	#00 ,&freeze-timer STR
-	#00 ;&hold-swapped STA
-	new-piece
-	set-next-piece
-	( if the new piece doesn't fit, die )
-	.cur try-piece
-		?&die
-	#00 ;&is-compact STA ( compact next frame )
+		#00 ,&freeze-timer STR
+		#00 ;&hold-swapped STA
+		new-piece
+		set-next-piece
+		( if the new piece doesn't fit, die )
+		.cur try-piece
+			?&die
+		#00 ;&is-compact STA ( compact next frame )
 
 	( update the current piece and ghost ) 
 	&update
-	update-ghost
-	set-ghost-piece
-	set-cur-piece
-	!&draw
+		update-ghost
+		set-ghost-piece
+		set-cur-piece
+			!&draw
 
 	( game over )
 	&die
-	#01 ;&is-dead STA
+		#01 ;&is-dead STA
 
 	&draw
-	draw-all
+		draw-all
 BRK
 
 @update-ghost
 	.ghost .cur copy-piece
 	&loop
-	.ghost/y LDZ INC .ghost/y STZ
-	.ghost try-piece #00 EQU 
-		?&loop
+		.ghost/y LDZ INC .ghost/y STZ
+		.ghost try-piece #00 EQU 
+			?&loop
 	.ghost/y LDZ #01 SUB .ghost/y STZ
+JMP2r
+
+@try-kick ( anti-clockwise -- blocked )
+	#00 SWP #08 MUL
+	#00 .test/type LDZ #00 EQU #40 MUL
+	#00 .test/rot LDZ #10 MUL
+	;kicks ADD2 ADD2 ADD2 ,&addr STR2
+	#00 ,&offs STR
+	&loop
+		[ LIT2 &addr $2 ] #00 [ LIT &offs $1 ] ADD2 INCk2
+		LDA .test/y LDZ ADD .test/y STZ
+		LDA .test/x LDZ ADD .test/x STZ
+		.test try-piece
+			?&next
+	#00 ( kick succeeded )
+JMP2r
+		&next ( reset and try next kick, if any left )
+		.cur/x LDZ .test/x STZ 
+		.cur/y LDZ .test/y STZ
+		,&offs LDR #02 ADD DUP ,&offs STR #08 LTH
+			?&loop
+	#01 ( all kicks blocked )
 JMP2r
 
 @button
