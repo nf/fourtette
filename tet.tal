@@ -34,9 +34,9 @@
 ( a virtual piece that sits where cur would drop )
 @ghost &type $1 &rot $1 &x $1 &y $1
 ( the next piece to enter the field )
-@next  &type $1 &rot $1 &x $1 &y $1
+@next  &type $1
 ( the hold piece )
-@hold  &type $1 &rot $1 &x $1 &y $1 &held $1
+@hold  &type $1 &ok $1
 
 @score
 	&level $1
@@ -47,7 +47,7 @@
 
 |0100 ( -> )
 	( theme ) 
-	;theme/mono theme/set
+	;theme/reverse theme/set
 
 	( vectors )
 	;on-frame .Screen/vector DEO2
@@ -64,7 +64,6 @@
 	new-piece ( first piece is always an i-piece, discard it )
 	new-piece
 	set-cur-piece
-	set-next-piece
 BRK
 
 @on-frame ( -> )
@@ -92,13 +91,12 @@ BRK
 	( no piece held yet )
 	#00 ,&not-held STR 
 	.cur/type LDZ .hold/type STZ
-	set-hold-piece
+	#01 .hold/ok STZ
 		!&make-new-piece
 	( swap hold and cur )
 	&hold-swap
 	init-cur-pos
 	.cur/type LDZ .hold/type LDZ .cur/type STZ .hold/type STZ
-	set-hold-piece
 	&hold-done
 
 	.test .cur copy-piece
@@ -190,7 +188,6 @@ BRK
 		#00 ,&freeze-timer STR
 		#00 ;&hold-swapped STA
 		new-piece
-		set-next-piece
 		( if the new piece doesn't fit, die )
 		.cur try-piece
 			?&die
@@ -288,10 +285,6 @@ JMP2r
 JMP2r
 
 @init-well ( -- )
-	#01 .next/x STZ
-	#01 .next/y STZ
-	#01 .hold/x STZ
-	#01 .hold/y STZ
 	;well &loop
 		DUP2 #0ff0 AND2 well_last_line GTH2
 			?&block
@@ -430,76 +423,42 @@ JMP2r
 		[ LIT &blocked $1 ] ORA ,&blocked STR
 	JMP2r
 
-@clear-next-piece ( -- )
-	;well-next &clear
-		DUP2 #00 ROT ROT STA
-	INC2 DUP2 ;well-next/end LTH2
-		?&clear
-	POP2
-JMP2r
-
-@set-next-piece ( -- )
-	clear-next-piece
-	.next #17 ;well-next set-piece
-JMP2r
-
-@clear-hold-piece ( -- )
-	;well-hold &clear
-		DUP2 #00 ROT ROT STA
-	INC2 DUP2 ;well-hold/end LTH2
-		?&clear
-	POP2
-JMP2r
-
-@set-hold-piece ( -- )
-	clear-hold-piece
-	.hold #17 ;well-hold set-piece
-JMP2r
-
-@piece-bits ( piece -- piece-bits* )
-	LDZk #30 SFT ( type ) 
-	SWP INC LDZ #10 SFT ( rot )
+@piece-bits ( rot type -- piece-bits* )
+	#30 SFT ( type ) 
+	SWP #10 SFT ( rot )
 	ADD #00 SWP
 	;pieces ADD2 LDA2 ( piece16 )
 JMP2r
 
-@piece-offset ( piece -- offset* )
-	INC INC INCk LDZ #00 SWP #0010 MUL2 ( y* )
-	ROT LDZ #00 SWP ( x* )
-	ADD2
-JMP2r
-
 @each-piece-block ( piece each-func* -- )
 	,&each-func STR2
-	DUP piece-bits ,&pbits STR2
-	    piece-offset ,&poffs STR2
+	LDZk ( type ) SWP INC LDZk ( rot )
+	SWP INC LDZk ( x ) SWP INC LDZ ( y )
+	#00 SWP #0010 MUL2 ROT #00 SWP ADD2 ,&offset STR2
+	SWP piece-bits ;&each each-piece-bits-block
+JMP2r
+	&each
+		DUP #0c AND #02 SFT #10 MUL
+		SWP #03 AND ADD
+		#00 SWP [ LIT2 &offset $2 ] ADD2 [ LIT2 &each-func $2 ] JMP2
+
+@each-piece-bits-block ( piece-bits* each-func* -- )
+	,&each-func STR2 ,&piece-bits STR2
 	( go backward from bottom-right, as we
-	  consume pbits least-to-most significant )
-	#33 ,&woffs STR
-	#00 ,&col STR ( 0-3 )
+	  consume piece-bits least-to-most significant )
+	#0f &loop
+		( test whether a piece block is at woffs )
+		[ LIT2 &piece-bits $2 ] NIP #01 AND #01 NEQ ?&no
+			DUP [ LIT2 &each-func $2 ] JSR2
+		&no
 
-	&loop
-	( test whether a piece block is at woffs )
-	[ LIT2 &pbits $2 ] NIP #01 AND #01 EOR ?&nope
-		[ LIT2 &poffs $2 ] #00 ,&woffs LDR ADD2
-		[ LIT2 &each-func $2 ] 
-		JSR2
-	&nope
-
-	[ LIT &woffs $1 ]
-	[ LIT &col $1 ] INC #04 MOD DUP ,&col STR
-		?&same-row
-	( next row )
-	#0c SUB 
-	&same-row
-	#01 SUB
-	,&woffs STR
-
-	( shift pbits right )
-	,&pbits LDR2 #01 SFT2 DUP2 ,&pbits STR2
-	( continue if there are more blocks )
-	#0000 GTH2
-		?&loop
+		#01 SUB
+		( shift piece-bits right )
+		,&piece-bits LDR2 #01 SFT2 DUP2 ,&piece-bits STR2
+		( continue if there are more blocks )
+		#0000 GTH2
+			?&loop
+	POP
 JMP2r
 
 @next-piece-type
@@ -558,8 +517,22 @@ JMP2r
 	;pos/well-y LDA2 .Screen/y DEO2
 	;well #0043 ADD2 #14 draw-well
 
-	;well-next ;pos/next-x LDA2 ;pos/next-y LDA2 .next/type LDZ draw-piece
-	;well-hold ;pos/hold-x LDA2 ;pos/hold-y LDA2 .hold/type LDZ draw-piece
+	( draw next and hold pieces )
+	;blank-chr .Screen/addr DEO2
+	;pos/next-x LDA2 .Screen/x DEO2
+	;pos/next-y LDA2 .Screen/y DEO2
+	;pos/next-w LDA
+	;pos/next-h LDA
+	#40 draw-texture
+	;pos/hold-x LDA2 .Screen/x DEO2
+	;pos/hold-y LDA2 .Screen/y DEO2
+	;pos/hold-w LDA
+	;pos/hold-h LDA
+	#40 draw-texture
+	;pos/next-x LDA2 ;pos/next-y LDA2 .next/type LDZ draw-piece
+	.hold/ok LDZ #00 EQU ?&no-hold
+		;pos/hold-x LDA2 ;pos/hold-y LDA2 .hold/type LDZ draw-piece
+	&no-hold
 
 	draw-score
 
@@ -568,12 +541,17 @@ JMP2r
 
 
 ( draw next piece in center of hold or next box )
-@draw-piece ( well* box-x* box-y* type -- )
-	,&type STR SWP2
-	( box-x ) #00 [ LIT &type $1 ] DUP #00 NEQ SWP #03 NEQ AND #0004 MUL2 ADD2 .Screen/x DEO2
-	( box-y ) INC2 #00 ,&type LDR #00 NEQ #0004 MUL2 ADD2 .Screen/y DEO2
-	#04 draw-well
+@draw-piece ( screen-x* screen-y* type -- )
+	,&type STR 
+	#00 ,&type LDR #00 NEQ #0004 MUL2 ADD2 #0009 ADD2 ,&screen-y STR2
+	#00 ,&type LDR DUP #00 NEQ SWP #03 NEQ AND #0004 MUL2 ADD2 #0008 ADD2 ,&screen-x STR2 
+	#00 ,&type LDR piece-bits ;&each each-piece-bits-block
 JMP2r
+	&each
+		DUP
+		#03 AND #08 MUL #00 SWP [ LIT2 &screen-x $2 ] ADD2 .Screen/x DEO2
+		#02 SFT #08 MUL #00 SWP [ LIT2 &screen-y $2 ] ADD2 .Screen/y DEO2
+		[ LIT &type $1 ] ;draw-block JMP2
 
 @draw-well ( well* height -- )
 	#00 SWP #0010 MUL2 ,&bottom STR2
@@ -999,8 +977,6 @@ JMP2r
 |4000
 
 @well $200 &end
-@well-next $40 &end
-@well-hold $40 &end
 
 @font ( atari8.uf1 )
 	0000 0000 0000 0000 6060 6060 6000 6000
