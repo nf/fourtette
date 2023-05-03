@@ -533,7 +533,7 @@ JMP2r
 		DUP
 		#03 AND #08 MUL #00 SWP [ LIT2 &screen-x $2 ] ADD2 .Screen/x DEO2
 		#02 SFT #08 MUL #00 SWP [ LIT2 &screen-y $2 ] ADD2 .Screen/y DEO2
-		[ LIT &type $1 ] ;draw-block JMP2
+		[ LIT &type $1 ] #10 ORA ;draw-block JMP2
 
 @draw-well ( -- )
 	#01 .Screen/auto DEO
@@ -543,26 +543,8 @@ JMP2r
 			?&done
 		DUP #0f AND #0c GTH
 			?&eol
-		DUP2 LDA
-		( draw ghost? )
-		DUP #08 AND
-			?&ghost
-		( draw block? )
-		DUP #f0 AND
-			?&block
-		( draw blank. )
-			POP 
-			;blank-chr .Screen/addr DEO2
-			#40 .Screen/sprite DEO
-				!&loop
-		&ghost
-			POP
-			;ghost-icn .Screen/addr DEO2
-			#41 .Screen/sprite DEO
-				!&loop
-		&block
-			draw-block
-				!&loop
+		DUP2 LDA draw-block
+			!&loop
 		&eol
 			.Screen/x DEI2 #0050 SUB2 .Screen/x DEO2
 			.Screen/y DEI2 #0008 ADD2 .Screen/y DEO2
@@ -572,11 +554,24 @@ JMP2r
 JMP2r
 
 @draw-block
-	#07 AND #03 MUL #00 SWP ;piece-sprites ADD2
-	INC2k INC2 LDA ROT ROT LDA2
-	.Screen/addr DEO2
-	.Screen/sprite DEO
-JMP2r
+	DUP #f0 AND
+		?&block
+	#08 AND
+		?&ghost
+	&blank
+		;blank-chr .Screen/addr DEO2
+		#40 .Screen/sprite DEO
+	JMP2r
+	&block
+		#07 AND #03 MUL #00 SWP ;piece-sprites ADD2
+		INC2k INC2 LDA ROT ROT LDA2
+		.Screen/addr DEO2
+		.Screen/sprite DEO
+	JMP2r
+	&ghost
+		;ghost-icn .Screen/addr DEO2
+		#41 .Screen/sprite DEO
+	JMP2r
 
 @draw-score ( -- )
 	;pos/score-x LDA2 #0004 ADD2 
