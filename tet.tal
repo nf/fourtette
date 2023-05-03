@@ -47,7 +47,7 @@
 
 |0100 ( -> )
 	( theme ) 
-	;theme/reverse theme/set
+	;theme/mono theme/set
 
 	( vectors )
 	;on-frame .Screen/vector DEO2
@@ -471,16 +471,7 @@ JMP2r
 			?&fill
 	,&len STR POP2
 	( shuffle bag )
-	;&bag ,&a STR2
-	#06 &shuffle
-		prng &x NIP OVR INC MOD #00 SWP ,&a LDR2 ADD2 ,&b STR2
-		[ LIT2 &a $2 ] LDA ,&tmp STR
-		[ LIT2 &b $2 ] LDA ,&a LDR2 STA
-		[ LIT &tmp $1 ] ,&b LDR2 STA
-		,&a LDR2 INC2 ,&a STR2
-		#01 SUB DUP
-			?&shuffle
-	POP
+	;&bag #07 shuffle
 	( pop type from bag )
 	&pop
 	,&len LDR #01 SUB DUP ,&len STR
@@ -833,6 +824,32 @@ JMP2r
 	LIT2 &y $2 DUP2 ,&x STR2
 	DUP2 #01 SFT2 EOR2 EOR2
 	,&y STR2k POP
+JMP2r
+
+@randn ( max -- num )
+        #00 &mask-loop
+                #10 SFT INC
+                DUP2 GTH
+                        ?&mask-loop
+        ,&mask STR
+        DUP &loop POP
+                prng EOR [ LIT &mask $1 ] AND
+                DUP2 LTH
+                        ?&loop
+        NIP
+JMP2r
+
+@shuffle ( addr* len -- )
+        ROT ROT ,&a STR2
+        &loop
+                #01 SUB
+                DUP randn #00 SWP ;&a LDA2 ADD2 ;&b STA2
+                [ LIT2 &a $2 ] LDA [ LIT2 &b $2 ] LDA
+                ;&a LDA2 STA ;&b LDA2 STA
+                ;&a LDA2 INC2 ;&a STA2
+                DUP #01 GTH
+                        ?&loop
+        POP
 JMP2r
 
 ( assets )
