@@ -1,4 +1,27 @@
-( untitled block game - a wip by nf@wh3rd.net )
+(
+
+fourtette, a falling block game by nf@wh3rd.net
+
+Technical notes:
+
+The playable well is 10 columns by 40 rows, as per the guideline. It is stored
+in a x10 by x30 region of memory starting at @well. Each row is x10 bytes, with
+the playable well in columns (x03, x0c), so the three bytes at the start and
+end of each line are not usable and form the walls.
+
+The high nibble of each well byte indicates the block state (for gameplay
+purposes), the low nibble indicates the block type (for drawing purposes).
+
+ [ 8 4 2 1 8 4 2 1 ]
+   | | | | |  \|/
+   | | | | |   type (0-6 normal pieces, 7 ghost)
+   | | | | unused
+   | | | falling  - set by set-cur-piece
+   | | frozen     - set by freeze-cur-piece
+   | compacting   - set and cleared by compact-well
+   wall/bottom    - set by init-well
+
+)
 
 ( macros )
 
@@ -379,28 +402,28 @@ JMP2r
 	next-piece-type .next/type STZ
 JMP2r
 
-@set-piece ( piece mask addr* -- )
-	,&addr STR2 OVR LDZ #f8 ORA AND ,&val STR
+@set-piece ( piece val -- )
+	,&val STR
 	;&each each-piece-block
 JMP2r
 	&each ( well-offset -- )
-		[ LIT2 &addr $2 ] ADD2 [ LIT &val $1 ] ROT ROT STA
+		;well ADD2 [ LIT &val $1 ] ROT ROT STA
 	JMP2r
 
 @set-cur-piece ( -- )
-	.cur #17 ;well set-piece
-JMP2r
-
-@clear-piece ( -- )
-	#00 ;well set-piece
+	.cur DUP LDZ #10 ORA set-piece
 JMP2r
 
 @freeze-cur-piece ( -- )
-	.cur #27 ;well set-piece
+	.cur DUP LDZ #20 ORA set-piece
 JMP2r
 
 @set-ghost-piece ( -- )
-	.ghost #08 ;well set-piece
+	.ghost #07 set-piece
+JMP2r
+
+@clear-piece ( -- )
+	#00 set-piece
 JMP2r
 
 ( tries to move cur to test, reports whether it failed )
@@ -553,12 +576,11 @@ JMP2r
 	&done POP2
 JMP2r
 
-@draw-block
-	DUP #f0 AND
+@draw-block ( block-type -- )
+	DUP #77 AND
 		?&block
-	#08 AND
-		?&ghost
 	&blank
+		POP
 		;blank-chr .Screen/addr DEO2
 		#40 .Screen/sprite DEO
 	JMP2r
@@ -567,10 +589,6 @@ JMP2r
 		INC2k INC2 LDA ROT ROT LDA2
 		.Screen/addr DEO2
 		.Screen/sprite DEO
-	JMP2r
-	&ghost
-		;ghost-icn .Screen/addr DEO2
-		#41 .Screen/sprite DEO
 	JMP2r
 
 @draw-score ( -- )
@@ -856,6 +874,7 @@ JMP2r
 	( t ) =blocks-icn/a c1
 	( z ) =blocks-icn/b c1
 	( j ) =blocks-icn/c c1
+	( ghost ) =ghost-icn 41
 
 @strings
 	&level "LEVEL $1
