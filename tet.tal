@@ -6,12 +6,6 @@
 %debug { #f4 .System/debug DEO }
 %halt  { #81 .System/halt DEO }
 
-%well_line_start { #03 }
-%well_line_end { #0c }
-%well_first_line { #0040 }
-%well_last_line { #0170 }
-%well_first_block_minus_1 { #0042 }
-
 ( devices )
 
 |00 @System     [ &vector $2 &wst      $1 &rst    $1 &pad   $4 &r      $2 &g      $2 &b    $2 &debug  $1 &halt $1 ]
@@ -286,17 +280,17 @@ JMP2r
 
 @init-well ( -- )
 	;well &loop
-		DUP2 #0ff0 AND2 well_last_line GTH2
+		DUP2 #0fff AND2 #027f GTH2
 			?&block
-		DUP #0f AND well_line_start LTH
+		DUP #0f AND #03 LTH
 			?&block
-		DUP #0f AND well_line_end GTH
+		DUP #0f AND #0c GTH
 			?&block
 		&space #00
 			!&store
 		&block #80
 		&store ROT ROT STAk ROT POP
-		INC2 DUP2 ;well/end LTH2
+		INC2 DUP2 #0fff AND2 #0300 LTH2
 			?&loop
 	POP2
 JMP2r
@@ -304,16 +298,13 @@ JMP2r
 @compact-well ( -- noop )
 	#00 ;&lines STA
 	#00 ,&line-sum STR
-	well_first_block_minus_1 ;well ADD2
-	&loop
+	;well #0002 ADD2 &loop
 		INC2
-		( check eol )
-		DUP #0f AND well_line_end GTH
-			?&eol
-		( check bottom )
-		DUP2 #0ff0 AND2 well_last_line GTH2
+		DUP2 #0fff AND2 #027f GTH2
 			?&done
-		( sum elements )
+		DUP #0f AND #0c GTH
+			?&eol
+		( sum block high nibble )
 		LDAk #04 SFT [ LIT &line-sum $1 ] ADD ,&line-sum STR
 			!&loop
 		&eol
@@ -378,7 +369,7 @@ JMP2r
 
 @init-cur-pos ( -- )
 	#06 .cur/x STZ
-	#02 .cur/y STZ
+	#11 .cur/y STZ
 	#00 .cur/rot STZ
 JMP2r
 
@@ -506,7 +497,7 @@ JMP2r
 	( draw well )
 	;pos/well-x LDA2 .Screen/x DEO2
 	;pos/well-y LDA2 .Screen/y DEO2
-	;well #0043 ADD2 #14 draw-well
+	draw-well
 
 	( draw next and hold pieces )
 	;blank-chr .Screen/addr DEO2
@@ -544,19 +535,15 @@ JMP2r
 		#02 SFT #08 MUL #00 SWP [ LIT2 &screen-y $2 ] ADD2 .Screen/y DEO2
 		[ LIT &type $1 ] ;draw-block JMP2
 
-@draw-well ( well* height -- )
-	#00 SWP #0010 MUL2 ,&bottom STR2
+@draw-well ( -- )
 	#01 .Screen/auto DEO
-	#0000 ,&n STR2
-	&loop
-		( check eol )
-		,&n LDR2 #000f AND2 #000a EQU2
-			?&eol
-		( check bottom )
-		,&n LDR2 [ LIT2 &bottom $2 ] EQU2
+	;well #0142 ADD2 &loop
+		INC2
+		DUP2 #0fff AND2 #027f GTH2
 			?&done
-		( load well value )
-		DUP2 [ LIT2 &n $2 ] INC2k ,&n STR2 ADD2 LDA
+		DUP #0f AND #0c GTH
+			?&eol
+		DUP2 LDA
 		( draw ghost? )
 		DUP #08 AND
 			?&ghost
@@ -579,7 +566,7 @@ JMP2r
 		&eol
 			.Screen/x DEI2 #0050 SUB2 .Screen/x DEO2
 			.Screen/y DEI2 #0008 ADD2 .Screen/y DEO2
-			,&n LDR2 #0006 ADD2 ,&n STR2
+			#0005 ADD2
 			!&loop
 	&done POP2
 JMP2r
@@ -993,7 +980,7 @@ JMP2r
 
 |4000
 
-@well $200 &end
+@well $300 &end
 
 @font ( atari8.uf1 )
 	0000 0000 0000 0000 6060 6060 6000 6000
