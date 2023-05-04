@@ -243,6 +243,7 @@ JMP2r
 	&die
 		#01 ;&is-dead STA
 		#0280 ;game-over/n STA2
+		;sfx-vol/game-over LDA ;sfx/tetris #28 play-sample-note
 
 	&draw
 		draw-fg
@@ -883,11 +884,16 @@ JMP2r
 	JMP2r
 
 @play-sample ( vol addr* -- )
+	#3c play-sample-note
+JMP2r
+
+@play-sample-note ( vol addr* note -- )
+	,&note STR
 	DUP2 LDA2 .Audio0/length DEO2
 	INC2 INC2 .Audio0/addr DEO2
 	.Audio0/volume DEO
 	#00f0 .Audio0/adsr DEO2
-	#bc .Audio0/pitch DEO
+	[ LIT &note $1 ] #80 ORA .Audio0/pitch DEO
 JMP2r
 
 ( prng )
@@ -1149,5 +1155,6 @@ JMP2r
 	&freeze ee
 	&line ee
 	&tetris ee
+	&game-over ff
 
 ~sfx.tal
