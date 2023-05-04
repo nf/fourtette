@@ -122,13 +122,13 @@ JMP2r
 	[ LIT &not-held 01 ]
 		?&first-hold
 	( swap hold and cur )
-	;sfx/hold play-sample
+	;sfx-vol/hold LDA ;sfx/hold play-sample
 	init-cur-pos
 	.cur/type LDZ .hold/type LDZ .cur/type STZ .hold/type STZ
 		!&update
 	( no piece held yet )
 	&first-hold
-	;sfx/hold play-sample
+	;sfx-vol/hold LDA ;sfx/hold play-sample
 	#00 ,&not-held STR 
 	.cur/type LDZ .hold/type STZ
 	#01 .hold/ok STZ
@@ -155,7 +155,7 @@ JMP2r
 		?&rot-done
 	( rot changed )
 	&rot-ok
-	;sfx/rot play-sample
+	;sfx-vol/rot LDA ;sfx/rot play-sample
 	.cur .test copy-piece
 	#00 ;&freeze-timer STA
 	&rot-done
@@ -168,7 +168,7 @@ JMP2r
 	.test try-piece
 		?&no-x
 	( x changed )
-	;sfx/x play-sample
+	;sfx-vol/x LDA ;sfx/x play-sample
 	.cur .test copy-piece
 	#00 ;&freeze-timer STA
 	&no-x
@@ -220,7 +220,7 @@ JMP2r
 			!&update
 	( freeze the current piece )
 	&freeze
-		;sfx/freeze play-sample
+		;sfx-vol/freeze LDA ;sfx/freeze play-sample
 		freeze-cur-piece
 	( create a new piece )
 	&make-new-piece
@@ -398,7 +398,9 @@ JMP2r
 	#01
 JMP2r
 	&inc-score
+		(
 		;line-sfx #00 ,&lines LDR #01 SUB #02 MUL ADD2 LDA2 #24 play-sample-note
+		)
 
 		.score/lines LDZ2 ,&before-lines STR2
 
@@ -875,17 +877,12 @@ JMP2r
 		OVR2r NIPr STHr .Screen/sprite DEO
 	JMP2r
 
-@play-sample ( addr* -- )
-	#3c play-sample-note
-JMP2r
-
-@play-sample-note ( addr* note -- )
-	ROT ROT
+@play-sample ( vol addr* -- )
 	DUP2 LDA2 .Audio0/length DEO2
 	INC2 INC2 .Audio0/addr DEO2
+	.Audio0/volume DEO
 	#00f0 .Audio0/adsr DEO2
-	#ff .Audio0/volume DEO
-	#80 ORA .Audio0/pitch DEO
+	#bc .Audio0/pitch DEO
 JMP2r
 
 ( prng )
@@ -1140,10 +1137,18 @@ JMP2r
 	d8 da dd df e1 e3 e5 e6 e8 ea eb ed ef f0 f1 f3
 	f4 f5 f6 f7 f8 f9 fa fa fb fc fc fd fd fd fd fd
 
+(
 @line-sfx
 	=sfx/line1
 	=sfx/line2
 	=sfx/line3
 	=sfx/line4
+)
+
+@sfx-vol
+	&x 33
+	&rot 66
+	&hold 88
+	&freeze aa
 
 ~sfx.tal

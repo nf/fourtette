@@ -6,57 +6,17 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 )
 
 func main() {
-	b, err := os.ReadFile("sfx.raw")
-	if err != nil {
-		log.Fatal(err)
-	}
-	var samples [][]byte
-	for len(b) > 0 {
-		quiet := 0
-		for i := range b {
-			//log.Printf("%.2x %d", b[i], quiet)
-			switch b[i] {
-			case 0x7e, 0x7f, 0x80, 0x81, 0x82:
-				quiet++
-			default:
-				quiet = 0
-			}
-			if quiet > 100 {
-				if i < 1000 {
-					log.Printf("found a sample %d bytes long (discarding)", i)
-				} else {
-					log.Printf("found a sample %d bytes long", i)
-					samples = append(samples, b[:i])
-				}
-				b = b[i:]
-				break
-			}
+	fmt.Println("@sfx")
+	for _, fn := range os.Args[1:] {
+		b, err := os.ReadFile(fn)
+		if err != nil {
+			log.Fatal(err)
 		}
-		found := false
-		for i := range b {
-			switch b[i] {
-			case 0x7e, 0x7f, 0x80, 0x81, 0x82:
-			default:
-				log.Printf("found %.2x", b[i])
-				found = true
-			}
-			if found {
-				b = b[i:]
-				break
-			}
-		}
-		if !found {
-			log.Printf("found no more samples")
-			break
-		}
-	}
-	fmt.Println("@samples")
-	for i, b := range samples {
-		b = b[:len(b)/2]
-		fmt.Printf("\t&s%d %.4x", i, uint16(len(b)))
+		fmt.Printf("\t&%s %.4x", strings.TrimSuffix(fn, ".raw"), uint16(len(b)))
 		for i, b := range b {
 			if i%0xf == 0 {
 				fmt.Printf("\n\t\t")
