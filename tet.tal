@@ -75,10 +75,18 @@ purposes), the low nibble indicates the block type (for drawing purposes).
 	#0100 .Screen/height DEO2
 
 	init-prng
+	restart
+BRK
+
+@restart ( -- )
+	#00 ;on-frame/is-dead STA
+	#00 .score/level STZ
+	#0000 .score/lines STZ2
+	#0000 .score/points STZ2
 	init-well
 	init-level
 	init-pieces
-BRK
+JMP2r
 
 @on-frame ( -> )
 	[ LIT &is-dead $1 ]
@@ -245,6 +253,10 @@ BRK
 	;pos/well-x LDA2 #0004 ADD2
 	;pos/well-y LDA2 #004d ADD2 
 	;strings/game-over #41 draw-str
+
+	#08 button/pressed #00 EQU
+		?&done
+	restart
 	&done
 BRK
 
@@ -271,7 +283,7 @@ JMP2r
 			?&next
 	#00 ( kick succeeded )
 JMP2r
-		&next ( reset and try next kick, if any left )
+	&next ( reset and try next kick, if any left )
 		.cur/x LDZ .test/x STZ 
 		.cur/y LDZ .test/y STZ
 		,&offs LDR #02 ADD DUP ,&offs STR #08 LTH
