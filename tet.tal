@@ -398,9 +398,13 @@ JMP2r
 	#01
 JMP2r
 	&inc-score
-		(
-		;line-sfx #00 ,&lines LDR #01 SUB #02 MUL ADD2 LDA2 #24 play-sample-note
-		)
+		,&lines LDR #04 EQU
+			?&tetris
+		;sfx-vol/line LDA ;sfx/line play-sample
+			!&sfx-done
+		&tetris
+		;sfx-vol/tetris LDA ;sfx/tetris play-sample
+		&sfx-done
 
 		.score/lines LDZ2 ,&before-lines STR2
 
@@ -1137,18 +1141,12 @@ JMP2r
 	d8 da dd df e1 e3 e5 e6 e8 ea eb ed ef f0 f1 f3
 	f4 f5 f6 f7 f8 f9 fa fa fb fc fc fd fd fd fd fd
 
-(
-@line-sfx
-	=sfx/line1
-	=sfx/line2
-	=sfx/line3
-	=sfx/line4
-)
-
 @sfx-vol
-	&x 33
-	&rot 66
-	&hold 88
-	&freeze aa
+	&x 88
+	&rot 99
+	&hold ee
+	&freeze ee
+	&line ee
+	&tetris ee
 
 ~sfx.tal
