@@ -307,7 +307,7 @@ JMP2r
 JMP2r
 
 @init-level ( -- )
-	#00 .score/level LDZ ;level-speed ADD2 LDA
+	#00 .score/level LDZ ;level-speeds ADD2 LDA
 	;on-frame/speed STA
 JMP2r
 
@@ -559,7 +559,7 @@ JMP2r
 	;pos/next-y LDA2 .Screen/y DEO2
 	;pos/next-w LDA
 	;pos/next-h LDA
-	#40 draw-texture
+	#40 draw-sprite-rect
 
 	#00 ,&n STR
 	&loop
@@ -577,7 +577,7 @@ JMP2r
 	;pos/hold-y LDA2 .Screen/y DEO2
 	;pos/hold-w LDA
 	;pos/hold-h LDA
-	#40 draw-texture
+	#40 draw-sprite-rect
 
 	.hold/ok LDZ #00 EQU
 		?&done
@@ -659,19 +659,9 @@ JMP2r
 @draw-bg ( -- )
 	( background )
 	;bg/grid-dot .Screen/addr DEO2
-	#f2 .Screen/auto DEO
 	#0000 .Screen/x DEO2
-	&bg-x
-		.Screen/x DEI2 #0100 GTH2
-			?&bg-done
-		#0000 .Screen/y DEO2
-		&bg-y
-			#03 .Screen/sprite DEO
-			.Screen/y DEI2 #0100 LTH2 
-				?&bg-y
-		.Screen/x DEI2 #0080 ADD2 .Screen/x DEO2
-		!&bg-x
-	&bg-done
+	#0000 .Screen/y DEO2
+	#20 #20 #03 draw-sprite-rect
 
 	( main field )
 	;pos/well-x LDA2 .Screen/x DEO2
@@ -685,7 +675,7 @@ JMP2r
 	;pos/well-y LDA2 .Screen/y DEO2
 	;pos/well-w LDA
 	;pos/well-h LDA
-	#00 draw-texture
+	#00 draw-sprite-rect
 
 	( next piece )
 	;pos/next-x LDA2 .Screen/x DEO2
@@ -699,7 +689,7 @@ JMP2r
 	;pos/next-y LDA2 .Screen/y DEO2
 	;pos/next-w LDA
 	;pos/next-h LDA
-	#00 draw-texture
+	#00 draw-sprite-rect
 
 	;pos/next-x LDA2 #0008 ADD2
 	;pos/next-y LDA2 #0003 ADD2 
@@ -717,7 +707,7 @@ JMP2r
 	;pos/hold-y LDA2 .Screen/y DEO2
 	;pos/hold-w LDA
 	;pos/hold-h LDA
-	#00 draw-texture
+	#00 draw-sprite-rect
 
 	;pos/hold-x LDA2 #0008 ADD2
 	;pos/hold-y LDA2 #0003 ADD2 
@@ -735,7 +725,7 @@ JMP2r
 	;pos/score-y LDA2 .Screen/y DEO2
 	;pos/score-w LDA
 	;pos/score-h LDA
-	#00 draw-texture
+	#00 draw-sprite-rect
 
 	;pos/score-x LDA2 #0004 ADD2
 	;pos/score-y LDA2 #0004 ADD2 
@@ -794,22 +784,23 @@ JMP2r
 		POP2
 	JMP2r
 
-@draw-texture ( w h col -- )
-	;&col STA SWP DUP ;&w STA MUL
+@draw-sprite-rect ( w h col -- )
+	;&col STA
+	SWP DUP ,&w STR
+	#00 SWP ROT #00 SWP MUL2
 	#01 .Screen/auto DEO
 	&loop
-		#01 SUB
-		DUP #0f MOD #43 SFT #30 AND
-		[ LIT &col $1 ] ORA .Screen/sprite DEO
-		DUP #00 EQU
+		#0001 SUB2
+		[ LIT &col $1 ] .Screen/sprite DEO
+		DUP2 #0000 EQU2
 			?&done
-		DUP [ LIT &w $1 ] MOD
+		DUP2 #00 [ LIT &w $1 ] DIV2k MUL2 SUB2 NIP
 			?&loop
 		&line
 		.Screen/x DEI2 #0008 #00 ;&w LDA MUL2 SUB2 .Screen/x DEO2
 		.Screen/y DEI2 #0008 ADD2 .Screen/y DEO2
 			!&loop
-	&done POP
+	&done POP2
 JMP2r
 
 ( text )
@@ -956,7 +947,7 @@ JMP2r
 	( 2>>3 ) 0200 ff00 02ff ff02
 	( 0>>3 ) ff00 0200 fffe 0201
 
-@level-speed
+@level-speeds
 	35 31 2d 29 25 21 1c 16 11 0b
 	0a 09 08 07 07 05 05 04 04 03
 	03 03 02 02 02 01 01 01 01 01
