@@ -19,13 +19,13 @@ func main() {
 		for i := range b {
 			//log.Printf("%.2x %d", b[i], quiet)
 			switch b[i] {
-			case 0x7f, 0x80, 0x81:
+			case 0x7e, 0x7f, 0x80, 0x81, 0x82:
 				quiet++
 			default:
 				quiet = 0
 			}
-			if quiet > 20 {
-				if i < 256 {
+			if quiet > 100 {
+				if i < 1000 {
 					log.Printf("found a sample %d bytes long (discarding)", i)
 				} else {
 					log.Printf("found a sample %d bytes long", i)
@@ -55,6 +55,7 @@ func main() {
 	}
 	fmt.Println("@samples")
 	for i, b := range samples {
+		b = b[:len(b)/2]
 		fmt.Printf("\t&s%d %.4x", i, uint16(len(b)))
 		for i, b := range b {
 			if i%0xf == 0 {
