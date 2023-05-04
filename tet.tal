@@ -125,6 +125,7 @@ JMP2r
 	;sfx-vol/hold LDA ;sfx/hold play-sample
 	init-cur-pos
 	.cur/type LDZ .hold/type LDZ .cur/type STZ .hold/type STZ
+	#00 ;&freeze-timer STA
 		!&update
 	( no piece held yet )
 	&first-hold
@@ -132,6 +133,7 @@ JMP2r
 	#00 ,&not-held STR 
 	.cur/type LDZ .hold/type STZ
 	#01 .hold/ok STZ
+	#00 ;&freeze-timer STA
 		!&make-new-piece
 	&no-hold
 
@@ -197,7 +199,9 @@ JMP2r
 	#20 button/held
 		?&inc-y
 
-	!&maybe-freeze
+	[ LIT &freeze-timer $1 ]
+		?&run-freeze-timer
+		!&update
 
 	( try to increment y )
 	&inc-y
@@ -209,11 +213,8 @@ JMP2r
 		.cur .test copy-piece
 		( ghost is unchanged )
 		!&update
-	( check if the freeze timer has expired, if running )
-	&maybe-freeze
-		[ LIT &freeze-timer $1 ] #00 EQU
-			?&update
-		&run-freeze-timer
+	( check if the freeze timer has expired )
+	&run-freeze-timer
 		,&freeze-timer LDR #1e GTH
 			?&freeze
 		,&freeze-timer LDR INC ,&freeze-timer STR
@@ -222,9 +223,9 @@ JMP2r
 	&freeze
 		;sfx-vol/freeze LDA ;sfx/freeze play-sample
 		freeze-cur-piece
+		#00 ,&freeze-timer STR
 	( create a new piece )
 	&make-new-piece
-		#00 ,&freeze-timer STR
 		#00 ;&hold-swapped STA
 		new-piece
 		( if the new piece doesn't fit, die )
