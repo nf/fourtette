@@ -95,24 +95,25 @@ BRK
 	
 	( swap hold piece )
 	#04 button/pressed #00 EQU
-		?&hold-done
+		?&no-hold
 	( only allow one swap per freeze )
 	[ LIT &hold-swapped $1 ]
-		?&hold-done
+		?&no-hold
 	( put cur piece in hold )
 	#01 ,&hold-swapped STR
-	[ LIT &not-held 01 ] #00 EQU
-		?&hold-swap
+	[ LIT &not-held 01 ]
+		?&first-hold
+	( swap hold and cur )
+	init-cur-pos
+	.cur/type LDZ .hold/type LDZ .cur/type STZ .hold/type STZ
+		!&update
 	( no piece held yet )
+	&first-hold
 	#00 ,&not-held STR 
 	.cur/type LDZ .hold/type STZ
 	#01 .hold/ok STZ
 		!&make-new-piece
-	( swap hold and cur )
-	&hold-swap
-	init-cur-pos
-	.cur/type LDZ .hold/type LDZ .cur/type STZ .hold/type STZ
-	&hold-done
+	&no-hold
 
 	.test .cur copy-piece
 
