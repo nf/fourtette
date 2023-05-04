@@ -92,6 +92,7 @@ BRK
 	[ LIT &is-compact $1 ]
 		?&no-compact
 	compact-well ,&is-compact STR 
+		!&update
 	&no-compact
 	
 	( swap hold piece )
@@ -384,12 +385,11 @@ JMP2r
 	JMP2r
 
 @remove-well-line ( well-addr-on-line -- )
+	#fff0 AND2 #0010 ADD2 ( go to end of this line )
 	&loop
 		#0001 SUB2
 		( read block from line above )
 		DUP2k #0010 SUB2 LDA
-		( exclude current piece )
-		#e7 AND 
 		( store block in current line )
 		ROT ROT STA
 		( see if we're done )
