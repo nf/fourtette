@@ -74,6 +74,7 @@ purposes), the low nibble indicates the block type (for drawing purposes).
 	#0100 .Screen/width DEO2
 	#0100 .Screen/height DEO2
 
+	draw-bg
 	init-prng
 	restart
 BRK
@@ -91,6 +92,15 @@ JMP2r
 @on-frame ( -> )
 	[ LIT &is-dead $1 ]
 		?game-over
+
+	( press start to pause )
+	#08 button/pressed #00 EQU
+		?&no-pause
+	,&is-paused LDR #01 EOR ,&is-paused STR
+	&no-pause
+
+	[ LIT &is-paused $1 ]
+		?&draw
 
 	.ghost clear-piece
 	.cur clear-piece
@@ -229,7 +239,7 @@ JMP2r
 		#0280 ;game-over/n STA2
 
 	&draw
-		draw-all
+		draw-fg
 BRK
 
 @game-over
@@ -246,7 +256,7 @@ BRK
 	SWP2 STA2
 
 	&draw
-	draw-all
+	draw-fg
 
 	,&n LDR2 #01d0 GTH2
 		?&done
@@ -556,24 +566,43 @@ JMP2r
 	&score-w 06
 	&score-h 08
 
-@draw-all
-	( foreground )
-	draw-well
+@draw-fg
+	( clear )
+	#0000 .Screen/x DEO2
+	#0000 .Screen/y DEO2
+	#c0 .Screen/pixel DEO
+
 	draw-next
 	draw-hold
 	draw-score
-	( background )
-	draw-bg
+
+	;on-frame/is-paused LDA
+		?draw-pause
+
+	( clear well background here,
+	  because draw-pause may have painted it )
+	;zero .Screen/addr DEO2
+	;pos/well-x LDA2 .Screen/x DEO2
+	;pos/well-y LDA2 .Screen/y DEO2
+	;pos/well-w LDA
+	;pos/well-h LDA
+	#00 draw-sprite-rect
+
+	draw-well
+JMP2r
+
+@draw-pause
+	;bg/stripes .Screen/addr DEO2
+	;pos/well-x LDA2 .Screen/x DEO2
+	;pos/well-y LDA2 .Screen/y DEO2
+	;pos/well-w LDA
+	;pos/well-h LDA
+	#03 draw-sprite-rect
+
+	#006a #0080 ;strings/pause #41 draw-str
 JMP2r
 
 @draw-next
-	;blank-chr .Screen/addr DEO2
-	;pos/next-x LDA2 .Screen/x DEO2
-	;pos/next-y LDA2 .Screen/y DEO2
-	;pos/next-w LDA
-	;pos/next-h LDA
-	#40 draw-sprite-rect
-
 	#00 ,&n STR
 	&loop
 		;pos/next-x LDA2 #0008 ADD2
@@ -585,13 +614,6 @@ JMP2r
 JMP2r
 
 @draw-hold
-	;blank-chr .Screen/addr DEO2
-	;pos/hold-x LDA2 .Screen/x DEO2
-	;pos/hold-y LDA2 .Screen/y DEO2
-	;pos/hold-w LDA
-	;pos/hold-h LDA
-	#40 draw-sprite-rect
-
 	.hold/ok LDZ #00 EQU
 		?&done
 	;pos/hold-x LDA2 #0008 ADD2
@@ -637,11 +659,10 @@ JMP2r
 @draw-block ( block-type -- )
 	DUP #77 AND
 		?&block
-	&blank
-		POP
-		;blank-chr .Screen/addr DEO2
-		#40 .Screen/sprite DEO
-	JMP2r
+	POP
+	;zero .Screen/addr DEO2
+	#40 .Screen/sprite DEO
+JMP2r
 	&block
 		#07 AND #03 MUL #00 SWP ;piece-sprites ADD2
 		INC2k INC2 LDA ROT ROT LDA2
@@ -683,13 +704,6 @@ JMP2r
 	;pos/well-h LDA
 	#8a draw-box 
 
-	;blank-chr .Screen/addr DEO2
-	;pos/well-x LDA2 .Screen/x DEO2
-	;pos/well-y LDA2 .Screen/y DEO2
-	;pos/well-w LDA
-	;pos/well-h LDA
-	#00 draw-sprite-rect
-
 	( next piece )
 	;pos/next-x LDA2 .Screen/x DEO2
 	;pos/next-y LDA2 .Screen/y DEO2
@@ -697,7 +711,7 @@ JMP2r
 	;pos/next-h LDA
 	#8a draw-box
 
-	;blank-chr .Screen/addr DEO2
+	;zero .Screen/addr DEO2
 	;pos/next-x LDA2 .Screen/x DEO2
 	;pos/next-y LDA2 .Screen/y DEO2
 	;pos/next-w LDA
@@ -715,7 +729,7 @@ JMP2r
 	;pos/hold-h LDA
 	#8a draw-box
 
-	;blank-chr .Screen/addr DEO2
+	;zero .Screen/addr DEO2
 	;pos/hold-x LDA2 .Screen/x DEO2
 	;pos/hold-y LDA2 .Screen/y DEO2
 	;pos/hold-w LDA
@@ -733,7 +747,7 @@ JMP2r
 	;pos/score-h LDA
 	#8a draw-box
 
-	;blank-chr .Screen/addr DEO2
+	;zero .Screen/addr DEO2
 	;pos/score-x LDA2 .Screen/x DEO2
 	;pos/score-y LDA2 .Screen/y DEO2
 	;pos/score-w LDA
@@ -932,6 +946,7 @@ JMP2r
 	&next "NEXT $1
 	&hold "HOLD $1
 	&game-over "GAME 20 "OVER $1
+	&pause "PAUSED $1
 @pieces
 	( i ) 0f00 2222 00f0 4444 
 	( s ) 6c00 4620 06c0 8c40
@@ -966,8 +981,11 @@ JMP2r
 	03 03 02 02 02 01 01 01 01 01
 	00
 
-@blank-chr
+@zero
 	0000 0000 0000 0000
+	0000 0000 0000 0000
+@grey-icn
+	aa55 55aa aa55 55aa
 	0000 0000 0000 0000
 @block-icn
 	7e81 8181 8181 817f
