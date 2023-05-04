@@ -74,10 +74,9 @@ purposes), the low nibble indicates the block type (for drawing purposes).
 	#0100 .Screen/width DEO2
 	#0100 .Screen/height DEO2
 
-	#10 ;on-frame/speed STA
-
 	init-prng
 	init-well
+	init-level
 	new-piece ( first piece is always an i-piece, discard it )
 	new-piece
 	set-cur-piece
@@ -304,6 +303,11 @@ JMP2r
 	#01
 JMP2r
 
+@init-level ( -- )
+	#00 .score/level LDZ ;level-speed ADD2 LDA
+	;on-frame/speed STA
+JMP2r
+
 @init-well ( -- )
 	;well &loop
 		DUP2 #0fff AND2 #027f GTH2
@@ -363,8 +367,19 @@ JMP2r
 	#01
 JMP2r
 	&inc-score
+		.score/lines LDZ2 ,&before-lines STR2
+
 		#00 [ LIT &lines $1 ] .score/lines LDZ2 ADD2 .score/lines STZ2
 		#00 ,&lines LDR DUP MUL .score/points LDZ2 ADD2 .score/points STZ2
+
+		.score/level LDZ #1e EQU
+			?&score-done
+		[ LIT2 &before-lines $2 ] #000a DIV2 .score/lines LDZ2 #000a DIV2 EQU2
+			?&score-done
+		.score/level LDZ INC .score/level STZ
+		init-level
+
+		&score-done
 		#00
 	JMP2r
 
@@ -914,6 +929,12 @@ JMP2r
 	( 3>>2 ) fe00 0100 fe01 01fe
 	( 2>>3 ) 0200 ff00 02ff ff02
 	( 0>>3 ) ff00 0200 fffe 0201
+
+@level-speed
+	35 31 2d 29 25 21 1c 16 11 0b
+	0a 09 08 07 07 05 05 04 04 03
+	03 03 02 02 02 01 01 01 01 01
+	00
 
 @blank-chr
 	0000 0000 0000 0000
