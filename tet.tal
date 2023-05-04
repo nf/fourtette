@@ -50,10 +50,10 @@ purposes), the low nibble indicates the block type (for drawing purposes).
 @test  &type $1 &rot $1 &x $1 &y $1
 ( a virtual piece that sits where cur would drop )
 @ghost &type $1 &rot $1 &x $1 &y $1
-( the next piece to enter the field )
-@next  &type $1
+( the next pieces to enter the field )
+@next $5
 ( the hold piece )
-@hold  &type $1 &ok $1
+@hold &type $1 &ok $1
 
 @score
 	&level $1
@@ -77,9 +77,7 @@ purposes), the low nibble indicates the block type (for drawing purposes).
 	init-prng
 	init-well
 	init-level
-	new-piece ( first piece is always an i-piece, discard it )
-	new-piece
-	set-cur-piece
+	init-pieces
 BRK
 
 @on-frame ( -> )
@@ -304,6 +302,10 @@ JMP2r
 	#01
 JMP2r
 
+@init-pieces ( -- )
+	#00 &loop new-piece INC DUP #06 LTH ?&loop POP
+JMP2r
+
 @init-level ( -- )
 	#00 .score/level LDZ ;level-speed ADD2 LDA
 	;on-frame/speed STA
@@ -416,8 +418,14 @@ JMP2r
 
 @new-piece ( -- )
 	init-cur-pos
-	.next/type LDZ .cur/type STZ
-	next-piece-type .next/type STZ
+	.next LDZ .cur/type STZ
+	#00 &loop
+		INCk .next ADD LDZ
+		OVR .next ADD STZ
+		INC DUP #04 LTH
+			?&loop
+	.next ADD
+	next-piece-type SWP STZ
 JMP2r
 
 @set-piece ( piece val -- )
@@ -521,12 +529,12 @@ JMP2r
 	&well-h 14
 
 	&next-x 00b0
-	&next-y 00b0
+	&next-y 0030
 	&next-w 06
-	&next-h 04
+	&next-h 0f
 
 	&hold-x 00b0
-	&hold-y 0030
+	&hold-y 00b0
 	&hold-w 06
 	&hold-h 04
 
@@ -536,39 +544,55 @@ JMP2r
 	&score-h 08
 
 @draw-all
-	( draw well )
-	;pos/well-x LDA2 .Screen/x DEO2
-	;pos/well-y LDA2 .Screen/y DEO2
+	( foreground )
 	draw-well
+	draw-next
+	draw-hold
+	draw-score
+	( background )
+	draw-bg
+JMP2r
 
-	( draw next and hold pieces )
+@draw-next
 	;blank-chr .Screen/addr DEO2
 	;pos/next-x LDA2 .Screen/x DEO2
 	;pos/next-y LDA2 .Screen/y DEO2
 	;pos/next-w LDA
 	;pos/next-h LDA
 	#40 draw-texture
+
+	#00 ,&n STR
+	&loop
+		;pos/next-x LDA2 #0008 ADD2
+		;pos/next-y LDA2 #000b ADD2 #0015 #00 ,&n LDR MUL2 ADD2
+		.next ,&n LDR ADD LDZ
+		draw-piece
+		[ LIT &n $1 ] INC DUP ,&n STR #05 LTH
+			?&loop
+JMP2r
+
+@draw-hold
+	;blank-chr .Screen/addr DEO2
 	;pos/hold-x LDA2 .Screen/x DEO2
 	;pos/hold-y LDA2 .Screen/y DEO2
 	;pos/hold-w LDA
 	;pos/hold-h LDA
 	#40 draw-texture
-	;pos/next-x LDA2 ;pos/next-y LDA2 .next/type LDZ draw-piece
-	.hold/ok LDZ #00 EQU ?&no-hold
-		;pos/hold-x LDA2 ;pos/hold-y LDA2 .hold/type LDZ draw-piece
-	&no-hold
 
-	draw-score
-
-	draw-bg
+	.hold/ok LDZ #00 EQU
+		?&done
+	;pos/hold-x LDA2 #0008 ADD2
+	;pos/hold-y LDA2 #0009 ADD2
+	.hold/type LDZ
+	draw-piece
+	&done
 JMP2r
 
-
-( draw next piece in center of hold or next box )
+( draw piece centered )
 @draw-piece ( screen-x* screen-y* type -- )
 	,&type STR 
-	#00 ,&type LDR #00 NEQ #0004 MUL2 ADD2 #0009 ADD2 ,&screen-y STR2
-	#00 ,&type LDR DUP #00 NEQ SWP #03 NEQ AND #0004 MUL2 ADD2 #0008 ADD2 ,&screen-x STR2 
+	#00 ,&type LDR #00 NEQ #0004 MUL2 ADD2 ,&screen-y STR2
+	#00 ,&type LDR DUP #00 NEQ SWP #03 NEQ AND #0004 MUL2 ADD2 ,&screen-x STR2
 	#00 ,&type LDR piece-bits ;&each each-piece-bits-block
 JMP2r
 	&each
@@ -578,6 +602,8 @@ JMP2r
 		[ LIT &type $1 ] #10 ORA ;draw-block JMP2
 
 @draw-well ( -- )
+	;pos/well-x LDA2 .Screen/x DEO2
+	;pos/well-y LDA2 .Screen/y DEO2
 	#01 .Screen/auto DEO
 	;well #0142 ADD2 &loop
 		INC2
