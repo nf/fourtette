@@ -866,22 +866,29 @@ JMP2r
 	STH
 	SWP2 .Screen/y DEO2
 	SWP2 .Screen/x DEO2
+	#00 ,&visible STR
 	#2710 DIV2k DUP2 NIP ,&digit JSR MUL2 SUB2
 	#03e8 DIV2k DUP2 NIP ,&digit JSR MUL2 SUB2
 	#0064 DIV2k DUP2 NIP ,&digit JSR MUL2 SUB2 NIP
 	#0a DIVk DUP ,&digit JSR MUL SUB
-	,&p-digit JSR
+	,&draw-digit JSR
 	STHr POP
 	#00 .Screen/auto DEO
 JMP2r
 	&digit ( chr -- )
-		DUP ?&p-digit POP #0000 !&put
-		&p-digit 
+		DUP [ LIT &visible $1 ] ORA
+			?&draw-digit
+		POP #0000
+			!&draw
+		&draw-digit
 		#10 ADD #00 SWP #30 SFT2 
-		&put
+		#01 ,&visible STR
+		&draw
 		;font ADD2 .Screen/addr DEO2
 		OVR2r NIPr STHr .Screen/sprite DEO
 	JMP2r
+
+( audio )
 
 @play-sample ( vol addr* -- )
 	#3c play-sample-note
