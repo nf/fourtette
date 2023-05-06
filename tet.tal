@@ -63,36 +63,50 @@ purposes), the low nibble indicates the block type (for drawing purposes).
 ( program )
 
 |0100 ( -> )
-	( theme ) 
-	;theme/mono theme/set
+	init-prng
 
-	( vectors )
-	;on-frame .Screen/vector DEO2
 	;button/vector .Controller/vector DEO2
 
-	( resize )
 	#0100 .Screen/width DEO2
 	#0100 .Screen/height DEO2
 
-	draw-bg
-	init-prng
-	restart
+	init-title
 BRK
 
-@restart ( -- )
-	#00 ;on-frame/is-dead STA
+@init-title ( -- )
+	;on-frame-title .Screen/vector DEO2
+	;theme/title theme/set
+	#0000 .Screen/x DEO2
+	#0000 .Screen/y DEO2
+	#81 .Screen/pixel DEO
+	;title-image #0010 #0020 draw-image
+JMP2r
+
+@on-frame-title ( -> )
+	#005c #00e8 ;strings/start 
+	#06 [ LIT &blink $1 ] #80 LTH ADD draw-str
+	,&blink LDR INC  ,&blink STR
+	#08 button/pressed
+		?&start
+BRK
+	&start
+		init-game
+	BRK
+
+
+@init-game ( -- )
+	;on-frame-game .Screen/vector DEO2
+	;theme/mono theme/set
 	#00 .score/level STZ
 	#0000 .score/lines STZ2
 	#0000 .score/points STZ2
 	init-well
 	init-level
 	init-pieces
+	draw-bg
 JMP2r
 
-@on-frame ( -> )
-	[ LIT &is-dead $1 ]
-		?game-over
-
+@on-frame-game ( -> )
 	( press start to pause )
 	#08 button/pressed #00 EQU
 		?&no-pause
@@ -241,15 +255,19 @@ JMP2r
 			!&draw
 
 	&die
-		#01 ;&is-dead STA
-		#0280 ;game-over/n STA2
-		;sfx-vol/game-over LDA ;sfx/tetris #28 play-sample-note
+		init-game-over
 
 	&draw
 		draw-fg
 BRK
 
-@game-over
+@init-game-over
+	;on-frame-game-over .Screen/vector DEO2
+	#0280 ;on-frame-game-over/n STA2
+	;sfx-vol/game-over LDA ;sfx/tetris #28 play-sample-note
+JMP2r
+
+@on-frame-game-over
 	[ LIT2 &n $2 ] #0140 LTH2
 		?&draw
 	,&n LDR2 #0002 SUB2 ,&n STR2
@@ -273,40 +291,9 @@ BRK
 
 	#08 button/pressed #00 EQU
 		?&done
-	restart
+	init-game
 	&done
 BRK
-
-@update-ghost
-	.ghost .cur copy-piece
-	&loop
-		.ghost/y LDZ INC .ghost/y STZ
-		.ghost try-piece #00 EQU 
-			?&loop
-	.ghost/y LDZ #01 SUB .ghost/y STZ
-JMP2r
-
-@try-kick ( anti-clockwise -- blocked )
-	#00 SWP #08 MUL
-	#00 .test/type LDZ #00 EQU #40 MUL
-	#00 .test/rot LDZ #10 MUL
-	;kicks ADD2 ADD2 ADD2 ,&addr STR2
-	#00 ,&offs STR
-	&loop
-		[ LIT2 &addr $2 ] #00 [ LIT &offs $1 ] ADD2 INCk2
-		LDA .test/y LDZ ADD .test/y STZ
-		LDA .test/x LDZ ADD .test/x STZ
-		.test try-piece
-			?&next
-	#00 ( kick succeeded )
-JMP2r
-	&next ( reset and try next kick, if any left )
-		.cur/x LDZ .test/x STZ 
-		.cur/y LDZ .test/y STZ
-		,&offs LDR #02 ADD DUP ,&offs STR #08 LTH
-			?&loop
-	#01 ( all kicks blocked )
-JMP2r
 
 @button
 	[ LIT &state $1 ]
@@ -338,7 +325,7 @@ JMP2r
 
 @init-level ( -- )
 	#00 .score/level LDZ ;level-speeds ADD2 LDA
-	;on-frame/speed STA
+	;on-frame-game/speed STA
 JMP2r
 
 @init-well ( -- )
@@ -486,6 +473,15 @@ JMP2r
 	.ghost #07 set-piece
 JMP2r
 
+@update-ghost
+	.ghost .cur copy-piece
+	&loop
+		.ghost/y LDZ INC .ghost/y STZ
+		.ghost try-piece #00 EQU 
+			?&loop
+	.ghost/y LDZ #01 SUB .ghost/y STZ
+JMP2r
+
 @clear-piece ( -- )
 	#00 set-piece
 JMP2r
@@ -500,6 +496,28 @@ JMP2r
 		;well ADD2 LDA #e0 AND
 		[ LIT &blocked $1 ] ORA ,&blocked STR
 	JMP2r
+
+@try-kick ( anti-clockwise -- blocked )
+	#00 SWP #08 MUL
+	#00 .test/type LDZ #00 EQU #40 MUL
+	#00 .test/rot LDZ #10 MUL
+	;kicks ADD2 ADD2 ADD2 ,&addr STR2
+	#00 ,&offs STR
+	&loop
+		[ LIT2 &addr $2 ] #00 [ LIT &offs $1 ] ADD2 INCk2
+		LDA .test/y LDZ ADD .test/y STZ
+		LDA .test/x LDZ ADD .test/x STZ
+		.test try-piece
+			?&next
+	#00 ( kick succeeded )
+JMP2r
+	&next ( reset and try next kick, if any left )
+		.cur/x LDZ .test/x STZ 
+		.cur/y LDZ .test/y STZ
+		,&offs LDR #02 ADD DUP ,&offs STR #08 LTH
+			?&loop
+	#01 ( all kicks blocked )
+JMP2r
 
 @piece-bits ( rot type -- piece-bits* )
 	#30 SFT ( type ) 
@@ -591,7 +609,7 @@ JMP2r
 	draw-hold
 	draw-score
 
-	;on-frame/is-paused LDA
+	;on-frame-game/is-paused LDA
 		?draw-pause
 
 	( clear well background here,
@@ -845,6 +863,25 @@ JMP2r
 	&done POP2
 JMP2r
 
+@draw-image ( addr* x* y* -- )
+	,&y STR2 ,&x STR2 
+	LDAk ,&w STR INC LDAk ,&h STR INC
+	.Screen/addr DEO2
+	#05 .Screen/auto DEO
+	[ LIT2 &y $2 ] .Screen/y DEO2
+	[ LIT &h $1 ] &yloop
+		[ LIT2 &x $2 ] .Screen/x DEO2
+		[ LIT &w $1 ] &xloop
+			#81 .Screen/sprite DEO
+			#01 SUB DUP
+				?&xloop
+		POP
+		.Screen/y DEI2 #0008 ADD2 .Screen/y DEO2
+		#01 SUB DUP
+			?&yloop
+	POP
+JMP2r
+
 ( text )
 
 @draw-str ( x* y* text* color -- )
@@ -959,6 +996,7 @@ JMP2r
 		LDA2 .System/g DEO2
 		LDA2 .System/r DEO2 
 	JMP2r
+	&title   f0a8 f0a8 f0a8
 	&mono    c359 c359 d46a
 	&reverse 2d94 2d94 3ea5
 	&cga     0f5a 0ff0 0ffa
@@ -982,6 +1020,8 @@ JMP2r
 	&hold "HOLD $1
 	&game-over "GAME 20 "OVER $1
 	&pause "PAUSED $1
+	&start "PRESS 20 "START $1
+
 @pieces
 	( i ) 0f00 2222 00f0 4444 
 	( s ) 6c00 4620 06c0 8c40
@@ -1165,3 +1205,4 @@ JMP2r
 	&game-over ff
 
 ~sfx/sfx.tal
+~gfx/gfx.tal
