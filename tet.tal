@@ -821,32 +821,32 @@ JMP2r
 	( tl )
 	#01 .Screen/auto DEO
 	;border-chr/corner .Screen/addr DEO2
-	#00 ;&put JSR2
+	#00 draw-box/put
 	( top )
 	;border-chr/edge-hor .Screen/addr DEO2
-	#00 [ LIT &w $1 ] ;&putn JSR2
+	#00 [ LIT &w $1 ] draw-box/putn
 	( tr )
 	#02 .Screen/auto DEO
 	;border-chr/corner .Screen/addr DEO2
-	#10 ;&put JSR2
+	#10 draw-box/put
 	( right )
 	;border-chr/edge-ver .Screen/addr DEO2
-	#10 [ LIT &h $1 ] ;&putn JSR2
+	#10 [ LIT &h $1 ] draw-box/putn
 	( br )
 	;border-chr/corner .Screen/addr DEO2
-	#30 ;&put JSR2
+	#30 draw-box/put
 	( left )
 	.Screen/x DEI2 #00 ;&w LDA #08 ADD SUB2 .Screen/x DEO2
 	.Screen/y DEI2 #00 ;&h LDA #08 ADD SUB2 .Screen/y DEO2
 	;border-chr/edge-ver .Screen/addr DEO2
-	#00 ;&h LDA ;&putn JSR2
+	#00 ;&h LDA draw-box/putn
 	( bl )    
 	#01 .Screen/auto DEO
 	;border-chr/corner .Screen/addr DEO2
-	#20 ;&put JSR2
+	#20 draw-box/put
 	( bottom )
 	;border-chr/edge-hor .Screen/addr DEO2
-	#20 ;&w LDA ;&putn JSR2
+	#20 ;&w LDA draw-box/putn
 JMP2r
 	&put ( flags -- )
 		[ LIT &col $1 ] ORA .Screen/sprite DEO
