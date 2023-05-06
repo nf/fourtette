@@ -1,27 +1,4 @@
-(
-
-fourtette, a falling block game by nf@wh3rd.net
-
-Technical notes:
-
-The playable well is 10 columns by 40 rows, as per the guideline. It is stored
-in a x10 by x30 region of memory starting at @well. Each row is x10 bytes, with
-the playable well in columns (x03, x0c), so the three bytes at the start and
-end of each line are not usable and form the walls.
-
-The high nibble of each well byte indicates the block state (for gameplay
-purposes), the low nibble indicates the block type (for drawing purposes).
-
- [ 8 4 2 1 8 4 2 1 ]
-   | | | | |  \|/
-   | | | | |   type (0-6 normal pieces, 7 ghost)
-   | | | | unused
-   | | | falling  - set by set-cur-piece
-   | | frozen     - set by freeze-cur-piece
-   | compacting   - set and cleared by compact-well
-   wall/bottom    - set by init-well
-
-)
+( fourtette, a block game by nf@wh3rd.net )
 
 ( macros )
 
