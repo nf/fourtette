@@ -470,23 +470,19 @@ JMP2r
 
 @set-piece ( piece val -- )
 	,&val STR
-	;&each each-piece-block
+	;&each !each-piece-block
+&each ( well-offset -- )
+	;well ADD2 [ LIT &val $1 ] ROT ROT STA
 JMP2r
-	&each ( well-offset -- )
-		;well ADD2 [ LIT &val $1 ] ROT ROT STA
-	JMP2r
 
 @set-cur-piece ( -- )
-	.cur DUP LDZ #10 ORA set-piece
-JMP2r
+	.cur DUP LDZ #10 ORA !set-piece
 
 @freeze-cur-piece ( -- )
-	.cur DUP LDZ #20 ORA set-piece
-JMP2r
+	.cur DUP LDZ #20 ORA !set-piece
 
 @set-ghost-piece ( -- )
-	.ghost #07 set-piece
-JMP2r
+	.ghost #07 !set-piece
 
 @update-ghost
 	.ghost .cur copy-piece
@@ -498,8 +494,7 @@ JMP2r
 JMP2r
 
 @clear-piece ( -- )
-	#00 set-piece
-JMP2r
+	#00 !set-piece
 
 ( tries to move cur to test, reports whether it failed )
 @try-piece ( piece -- blocked )
@@ -546,13 +541,12 @@ JMP2r
 	LDZk ( type ) SWP INC LDZk ( rot )
 	SWP INC LDZk ( x ) SWP INC LDZ ( y )
 	#00 SWP #0010 MUL2 ROT #00 SWP ADD2 ,&offset STR2
-	SWP piece-bits ;&each each-piece-bits-block
-JMP2r
-	&each
-		DUP #0c AND #02 SFT #10 MUL
-		SWP #03 AND ADD
-		#00 SWP [ LIT2 &offset $2 ] ADD2
-		[ LIT2 &each-func $2 ] JMP2
+	SWP piece-bits ;&each !each-piece-bits-block
+&each
+	DUP #0c AND #02 SFT #10 MUL
+	SWP #03 AND ADD
+	#00 SWP [ LIT2 &offset $2 ] ADD2
+	[ LIT2 &each-func $2 ] JMP2
 
 @each-piece-bits-block ( piece-bits* each-func* -- )
 	,&each-func STR2 ,&piece-bits STR2
@@ -676,13 +670,12 @@ JMP2r
 	,&type STR 
 	#00 ,&type LDR #00 NEQ #0004 MUL2 ADD2 ,&screen-y STR2
 	#00 ,&type LDR DUP #00 NEQ SWP #03 NEQ AND #0004 MUL2 ADD2 ,&screen-x STR2
-	#00 ,&type LDR piece-bits ;&each each-piece-bits-block
-JMP2r
-	&each
-		DUP
-		#03 AND #08 MUL #00 SWP [ LIT2 &screen-x $2 ] ADD2 .Screen/x DEO2
-		#02 SFT #08 MUL #00 SWP [ LIT2 &screen-y $2 ] ADD2 .Screen/y DEO2
-		[ LIT &type $1 ] #10 ORA ;draw-block JMP2
+	#00 ,&type LDR piece-bits ;&each !each-piece-bits-block
+&each
+	DUP
+	#03 AND #08 MUL #00 SWP [ LIT2 &screen-x $2 ] ADD2 .Screen/x DEO2
+	#02 SFT #08 MUL #00 SWP [ LIT2 &screen-y $2 ] ADD2 .Screen/y DEO2
+	[ LIT &type $1 ] #10 ORA ;draw-block JMP2
 
 @draw-well ( -- )
 	;pos/well-x LDA2 .Screen/x DEO2
