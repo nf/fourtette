@@ -69,13 +69,13 @@ purposes), the low nibble indicates the block type (for drawing purposes).
 
 	#0100 .Screen/width DEO2
 	#0100 .Screen/height DEO2
+	;theme/mono theme/set
 
 	init-title
 BRK
 
 @init-title ( -- )
 	;on-frame-title .Screen/vector DEO2
-	;theme/title theme/set
 	#00 ;on-frame-title/n STA
 JMP2r
 
@@ -85,7 +85,7 @@ JMP2r
 	;costab #00 ,&n LDR ADD2 LDA ,&yoffs STR
 	,&n LDR INC ,&n STR
 	( clear )
-	#0000 .Screen/x DEO2 #0000 .Screen/y DEO2 #81 .Screen/pixel DEO
+	#0000 .Screen/x DEO2 #0000 .Screen/y DEO2 #83 .Screen/pixel DEO
 	( draw image )
 	;title-image #0010 #0020 #00 [ LIT &yoffs $1 ] SUB2 draw-image
 		!&draw-done
@@ -93,12 +93,12 @@ JMP2r
 
 	( draw "press start" )
 	#0054 #00e8 ;strings/start 
-	#06 [ LIT &blink $1 ] #b0 LTH ADD draw-str
+	#0d [ LIT &blink $1 ] #b0 LTH #03 MUL SUB draw-str
 	,&blink LDR INC ,&blink STR
 
 	&draw-done
 
-	#08 button/pressed ?&start
+	#0c button/pressed ?&start
 BRK
 	&start
 	init-game
@@ -107,7 +107,6 @@ BRK
 
 @init-game ( -- )
 	;on-frame-game .Screen/vector DEO2
-	;theme/mono theme/set
 	#00 .score/level STZ
 	#0000 .score/lines STZ2
 	#0000 .score/points STZ2

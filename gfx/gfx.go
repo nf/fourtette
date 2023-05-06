@@ -29,12 +29,12 @@ func main() {
 					a <<= 1
 					b <<= 1
 					switch c := m.GrayAt(sx+dx, sy+dy).Y; c {
-					case 0, 25:
+					case 0:
 						a |= 0x1
-					case 123:
+					case 25:
 						a |= 0x1
 						b |= 0x1
-					case 165:
+					case 123, 165:
 						b |= 0x1
 					case 255:
 					default:
