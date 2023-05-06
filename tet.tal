@@ -706,8 +706,7 @@ JMP2r
 	DUP #77 AND
 		?&block
 	POP
-	;zero .Screen/addr DEO2
-	#40 .Screen/sprite DEO
+	.Screen/x DEI2 #0008 ADD2 .Screen/x DEO2
 JMP2r
 	&block
 		#07 AND #03 MUL #00 SWP ;piece-sprites ADD2
