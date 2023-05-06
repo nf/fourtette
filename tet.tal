@@ -468,6 +468,24 @@ JMP2r
 	next-piece-type SWP STZ
 JMP2r
 
+@next-piece-type
+	[ LIT &len $1 ]
+		?&pop
+	( fill bag 0-6 )
+	;&bag #00 &fill
+		ROT ROT STAk
+		INC2 ROT INC DUP #07 LTH
+			?&fill
+	,&len STR POP2
+	( shuffle bag )
+	;&bag #07 shuffle
+	( pop type from bag )
+	&pop
+	,&len LDR #01 SUB DUP ,&len STR
+	#00 SWP ;&bag ADD2 LDA
+JMP2r
+	[ &bag $7 ]
+
 @set-piece ( piece val -- )
 	,&val STR
 	;&each !each-piece-block
@@ -484,15 +502,6 @@ JMP2r
 @set-ghost-piece ( -- )
 	.ghost #07 !set-piece
 
-@update-ghost
-	.ghost .cur copy-piece
-	&loop
-		.ghost/y LDZ INC .ghost/y STZ
-		.ghost try-piece #00 EQU 
-			?&loop
-	.ghost/y LDZ #01 SUB .ghost/y STZ
-JMP2r
-
 @clear-piece ( -- )
 	#00 !set-piece
 
@@ -507,6 +516,18 @@ JMP2r
 		[ LIT &blocked $1 ] ORA ,&blocked STR
 	JMP2r
 
+( set ghost to cur, but at the bottom-most y point that fits )
+@update-ghost
+	.ghost .cur copy-piece
+	&loop
+		.ghost/y LDZ INC .ghost/y STZ
+		.ghost try-piece #00 EQU 
+			?&loop
+	.ghost/y LDZ #01 SUB .ghost/y STZ
+JMP2r
+
+( try all the kicks for the test piece for the given rotation,
+  leaves the test piece in a slot that fits )
 @try-kick ( anti-clockwise -- blocked )
 	#00 SWP #08 MUL
 	#00 .test/type LDZ #00 EQU #40 MUL
@@ -529,6 +550,8 @@ JMP2r
 	#01 ( all kicks blocked )
 JMP2r
 
+( return the bits that define a 4x4 piece
+  of the given type and rotation )
 @piece-bits ( rot type -- piece-bits* )
 	#30 SFT ( type ) 
 	SWP #10 SFT ( rot )
@@ -566,24 +589,6 @@ JMP2r
 			?&loop
 	POP
 JMP2r
-
-@next-piece-type
-	[ LIT &len $1 ]
-		?&pop
-	( fill bag 0-6 )
-	;&bag #00 &fill
-		ROT ROT STAk
-		INC2 ROT INC DUP #07 LTH
-			?&fill
-	,&len STR POP2
-	( shuffle bag )
-	;&bag #07 shuffle
-	( pop type from bag )
-	&pop
-	,&len LDR #01 SUB DUP ,&len STR
-	#00 SWP ;&bag ADD2 LDA
-JMP2r
-	[ &bag $7 ]
 
 ( draw game state )
 
