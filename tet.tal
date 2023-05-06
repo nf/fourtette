@@ -999,7 +999,7 @@ JMP2r
         POP
 JMP2r
 
-( assets )
+( game data )
 
 @theme
 	&set ( addr* -- )
@@ -1032,16 +1032,6 @@ JMP2r
 	( z ) =blocks-icn/b c1
 	( j ) =blocks-icn/c c1
 	( ghost ) =ghost-icn 41
-
-@strings
-	&level "LEVEL $1
-	&lines "LINES $1
-	&score "SCORE $1
-	&next "NEXT $1
-	&hold "HOLD $1
-	&game-over "GAME 20 "OVER $1
-	&pause "PAUSED $1
-	&start "PRESS 20 "START $1
 
 @pieces
 	( i ) 0f00 2222 00f0 4444 
@@ -1077,15 +1067,21 @@ JMP2r
 	03 03 02 02 02 01 01 01 01 01
 	00
 
+@strings
+	&level "LEVEL $1
+	&lines "LINES $1
+	&score "SCORE $1
+	&next "NEXT $1
+	&hold "HOLD $1
+	&game-over "GAME 20 "OVER $1
+	&pause "PAUSED $1
+	&start "PRESS 20 "START $1
+
+( sprites )
+
 @zero
 	0000 0000 0000 0000
 	0000 0000 0000 0000
-@grey-icn
-	aa55 55aa aa55 55aa
-	0000 0000 0000 0000
-@block-icn
-	7e81 8181 8181 817f
-	007f 7f7f 7f7f 7f7f
 @blocks-icn
 	&a
 	007e 7e7e 7e7e 7e00
@@ -1099,16 +1095,9 @@ JMP2r
 	&d
 	007e 7e7e 7e7e 7e00
 	ffab d5ab d5ab d5ff
-	&x
-	007e 7e7e 7e7e 7e00
-	ff99 b3e7 cd99 b3ff
-	&y
-	007c 7a76 6e5e 3e00
-	ff83 8589 91a1 c1ff
 @ghost-icn
 	aa01 8001 8001 8055
 	0000 0000 0000 0000
-
 @border-chr
 	&corner
 	0000 0000 0000 0001
@@ -1119,45 +1108,15 @@ JMP2r
 	&edge-hor
 	0000 0000 0000 00ff
 	0000 0000 0000 ff00
-@border2-chr
-	&corner
-	0000 0000 0000 0303
-	0000 0000 0001 0004
-	&edge-ver
-	0303 0303 0303 0303
-	0404 0404 0404 0404
-	&edge-hor
-	0000 0000 0000 ffff
-	0000 0000 00ff 0000
-@border3-chr
-	&corner
-	0000 0000 0003 0707
-	0000 0000 0304 0808
-	&edge-ver
-	0707 0707 0707 0707
-	0808 0808 0808 0808
-	&edge-hor
-	0000 0000 00ff ffff
-	0000 0000 ff00 0000
 @bg
 	&stripes
 	030c 30c0 030c 30c0
 	e38f 3ef8 e38f 3ef8
-	&dots
-	0000 4000 0000 1000
-	0000 4000 0000 0000
-	&dots2
-	0000 4000 0000 1000
-	0000 4000 0200 0000
-	&grid
-	2020 2020 20ff 2020
-	0000 0000 0000 0000
 	&grid-dot
 	0010 0010 aa10 0010
 	0000 0000 0000 0000
-	&grid-dot2
-	2000 2000 2055 2000
-	0000 0000 0000 0000
+
+( pre-calculated tables )
 
 @costab
 	fe fd fd fd fd fd fc fc fb fa fa f9 f8 f7 f6 f5
@@ -1177,13 +1136,13 @@ JMP2r
 	d8 da dd df e1 e3 e5 e6 e8 ea eb ed ef f0 f1 f3
 	f4 f5 f6 f7 f8 f9 fa fa fb fc fc fd fd fd fd fd
 
-( game state )
-
-|4000
-
-@well $300
-
 ~sfx/sfx.tal
 ~gfx/gfx.tal
 ~font.tal
 ~music.tal
+
+( game state )
+
+|f000
+
+@well $300
