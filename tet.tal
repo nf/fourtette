@@ -76,22 +76,33 @@ BRK
 @init-title ( -- )
 	;on-frame-title .Screen/vector DEO2
 	;theme/title theme/set
-	#0000 .Screen/x DEO2
-	#0000 .Screen/y DEO2
-	#81 .Screen/pixel DEO
-	;title-image #0010 #0020 draw-image
+	#00 ;on-frame-title/n STA
 JMP2r
 
 @on-frame-title ( -> )
-	#005c #00e8 ;strings/start 
-	#06 [ LIT &blink $1 ] #80 LTH ADD draw-str
-	,&blink LDR INC  ,&blink STR
-	#08 button/pressed
-		?&start
+	[ LIT &n $1 ] #84 EQU
+		?&anim-done
+	;costab #00 ,&n LDR ADD2 LDA ,&yoffs STR
+	,&n LDR INC ,&n STR
+	( clear )
+	#0000 .Screen/x DEO2 #0000 .Screen/y DEO2 #81 .Screen/pixel DEO
+	( draw image )
+	;title-image #0010 #0020 #00 [ LIT &yoffs $1 ] SUB2 draw-image
+		!&draw-done
+	&anim-done
+
+	( draw "press start" )
+	#0054 #00e8 ;strings/start 
+	#06 [ LIT &blink $1 ] #b0 LTH ADD draw-str
+	,&blink LDR INC ,&blink STR
+
+	&draw-done
+
+	#08 button/pressed ?&start
 BRK
 	&start
-		init-game
-	BRK
+	init-game
+BRK
 
 
 @init-game ( -- )
