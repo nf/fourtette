@@ -47,6 +47,7 @@ func main() {
 			sprites = append(sprites, sprite[:]...)
 		}
 	}
+	fmt.Println("( title screen by rek <3 )")
 	fmt.Printf("@title-image %.2x %.2x ( w, h )",
 		m.Bounds().Dx()/8, m.Bounds().Dy()/8)
 	for i, b := range sprites {
