@@ -1016,12 +1016,12 @@ JMP2r
 	&cga-ish 0ea5 0cf2 09d9 
 
 @sfx-vol
-	&x 88
-	&rot 99
-	&hold ee
-	&freeze ee
-	&line ee
-	&tetris ee
+	&x 99
+	&rot aa
+	&hold ff
+	&freeze ff
+	&line ff
+	&tetris ff
 	&game-over ff
 
 @piece-sprites ( addr* color )
