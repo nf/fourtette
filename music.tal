@@ -7,13 +7,13 @@
     #0300    #38 DEO2 ( adsr )
     #0002    #3a DEO2 ( len )
     ;&square #3c DEO2 ( addr )
-    #ff      #3e DEO  ( volume )
+    #55      #3e DEO  ( volume )
 
     ( set up bass )
     #0600    #48 DEO2 ( adsr )
     #0002    #4a DEO2 ( len )
     ;&square #4c DEO2 ( addr )
-    #ff      #4e DEO  ( volume )
+    #55      #4e DEO  ( volume )
 JMP2r
 
 &on-frame
