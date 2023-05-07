@@ -104,6 +104,8 @@ BRK
 	,&is-paused LDR #01 EOR ,&is-paused STR
 	&no-pause
 
+	music/on-frame
+
 	[ LIT &is-paused $1 ]
 		?&draw
 
