@@ -4,7 +4,7 @@ A block game by [nf](mailto:nf@wh3rd.net) for [Uxn](https://100r.co/site/uxn.htm
 
 Title screen by [Rek Bell](http://kokorobot.ca/site/home.html).
 
-Music arranged by d_m.
+Music arranged by [d_m](http://plastic-idolatry.com/erik).
 
 ## Controls:
 
