@@ -56,8 +56,8 @@ BRK
 @init-title ( -- )
 	;on-frame-title .Screen/vector DEO2
 	#00 ;on-frame-title/n STA
-	music/init
-JMP2r
+
+!music/init
 
 @on-frame-title ( -> )
 	[ LIT &n $1 ] #84 EQU
@@ -95,8 +95,7 @@ BRK
 	init-well
 	init-level
 	init-pieces
-	draw-bg
-JMP2r
+!draw-bg
 
 @on-frame-game ( -> )
 	( press start to pause )
@@ -256,8 +255,8 @@ BRK
 @init-game-over
 	;on-frame-game-over .Screen/vector DEO2
 	#0280 ;on-frame-game-over/n STA2
-	;sfx-vol/game-over LDA ;sfx/tetris #28 play-sample-note
-JMP2r
+	;sfx-vol/game-over LDA ;sfx/tetris #28 
+!play-sample-note
 
 @on-frame-game-over
 	[ LIT2 &n $2 ] #0140 LTH2
@@ -612,8 +611,7 @@ JMP2r
 	;pos/well-h LDA
 	#00 draw-sprite-rect
 
-	draw-well
-JMP2r
+!draw-well
 
 @draw-pause
 	;bg/stripes .Screen/addr DEO2
@@ -657,7 +655,7 @@ JMP2r
 	DUP
 	#03 AND #08 MUL #00 SWP [ LIT2 &screen-x $2 ] ADD2 .Screen/x DEO2
 	#02 SFT #08 MUL #00 SWP [ LIT2 &screen-y $2 ] ADD2 .Screen/y DEO2
-	[ LIT &type $1 ] #10 ORA ;draw-block JMP2
+	[ LIT &type $1 ] #10 ORA !draw-block
 
 @draw-well ( -- )
 	;pos/well-x LDA2 .Screen/x DEO2
@@ -707,8 +705,7 @@ JMP2r
 	;pos/score-y LDA2 #0036 ADD2
 	.score/points LDZ2
 	#41
-	draw-num
-JMP2r
+!draw-num
 
 ( backgrounds )
 
@@ -786,8 +783,9 @@ JMP2r
 
 	;pos/score-x LDA2 #0004 ADD2
 	;pos/score-y LDA2 #002c ADD2 
-	;strings/score #02 draw-str
-JMP2r
+	;strings/score #02
+
+!draw-str
 
 @draw-box ( w h col -- )
 	;&col STA #08 MUL ;&h STA #08 MUL ;&w STA
@@ -951,29 +949,29 @@ JMP2r
 JMP2r
 
 @randn ( max -- num )
-        #00 &mask-loop
-                #10 SFT INC
-                DUP2 GTH
-                        ?&mask-loop
-        ,&mask STR
-        DUP &loop POP
-                prng EOR [ LIT &mask $1 ] AND
-                DUP2 LTH
-                        ?&loop
-        NIP
+	#00 &mask-loop
+		#10 SFT INC
+		DUP2 GTH
+		?&mask-loop
+		,&mask STR
+		DUP &loop POP
+			prng EOR [ LIT &mask $1 ] AND
+			DUP2 LTH
+			?&loop
+	NIP
 JMP2r
 
 @shuffle ( addr* len -- )
-        ROT ROT ,&a STR2
-        &loop
-                #01 SUB
-                DUP randn #00 SWP ;&a LDA2 ADD2 ;&b STA2
-                [ LIT2 &a $2 ] LDA [ LIT2 &b $2 ] LDA
-                ;&a LDA2 STA ;&b LDA2 STA
-                ;&a LDA2 INC2 ;&a STA2
-                DUP #01 GTH
-                        ?&loop
-        POP
+		ROT ROT ,&a STR2
+		&loop
+			#01 SUB
+			DUP randn #00 SWP ;&a LDA2 ADD2 ;&b STA2
+			[ LIT2 &a $2 ] LDA [ LIT2 &b $2 ] LDA
+			;&a LDA2 STA ;&b LDA2 STA
+			;&a LDA2 INC2 ;&a STA2
+			DUP #01 GTH
+				?&loop
+		POP
 JMP2r
 
 ( game data )
