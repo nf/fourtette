@@ -915,7 +915,8 @@ JMP2r
 ( audio )
 
 @play-sample ( vol addr* -- )
-	#3c !play-sample-note
+
+	#3c
 
 @play-sample-note ( vol addr* note -- )
 	,&note STR
@@ -950,12 +951,12 @@ JMP2r
 @randn ( max -- num )
 	#00 &mask-loop
 		DUP ADD INC
-		DUP2 GTH
+		GTHk
 		?&mask-loop
 		,&mask STR
 		DUP &loop POP
 			prng EOR [ LIT &mask $1 ] AND
-			DUP2 LTH
+			LTHk
 			?&loop
 	NIP
 JMP2r
