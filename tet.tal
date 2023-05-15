@@ -11,7 +11,7 @@
 |00 @System     [ &vector $2 &wst      $1 &rst    $1 &pad   $4 &r      $2 &g      $2 &b    $2 &debug  $1 &halt $1 ]
 |10 @Console    [ &vector $2 &read     $1 &pad    $5 &write $1 &error  $1 ]
 |20 @Screen     [ &vector $2 &width    $2 &height $2 &auto  $1 &pad    $1 &x      $2 &y    $2 &addr   $2 &pixel $1 &sprite $1 ]
-|30 @Audio0     [ &vector $2 &position $2 &output $1 &pad   $3 &adsr   $2 &length $2 &addr $2 &volume $1 &pitch $1 ]
+|60 @Audio0     [ &vector $2 &position $2 &output $1 &pad   $3 &adsr   $2 &length $2 &addr $2 &volume $1 &pitch $1 ]
 |80 @Controller [ &vector $2 &button   $1 &key    $1 ]
 |c0 @DateTime   [ &year   $2 &month    $1 &day    $1 &hour  $1 &minute $1 &second $1 &dotw $1 &doty   $2 &isdst $1 ]
 
@@ -37,7 +37,18 @@
 	&lines $2
 	&points $2
 
-@music-state &counter $1 &position $2
+@music-player
+	&which $1
+	&counter $1
+	&delay $1
+	&position $2
+	&length $2
+	&update $2
+	&treble1 $2
+	&treble2 $2
+	&bass $2
+	&drums $2
+	&drums-off $1
 
 ( program )
 
@@ -56,8 +67,10 @@ BRK
 @init-title ( -- )
 	;on-frame-title .Screen/vector DEO2
 	#00 ;on-frame-title/n STA
-
-!music/init
+	#00 .music-player/drums-off STZ
+	#01 .music-player/which STZ
+	music/init
+JMP2r
 
 @on-frame-title ( -> )
 	[ LIT &n $1 ] #84 EQU
@@ -72,7 +85,7 @@ BRK
 	&anim-done
 
 	( play music )
-	music/on-frame
+	music/on-screen-audio
 
 	( draw "press start" )
 	#0054 #00e8 ;strings/start 
@@ -84,14 +97,125 @@ BRK
 	#0c button/pressed ?&start
 BRK
 	&start
-	init-game
+	menu
 BRK
 
-@init-game ( -- )
+@menu
+	;&on-frame .Screen/vector DEO2
+
+	#00 ;&selected STA
+	#00 ;&start-level STA
+	#00 .music-player/drums-off STZ
+	.music-player/which LDZ ;&music-selection STA
+
+	( clear )
+	#0000 .Screen/x DEO2
+	#0000 .Screen/y DEO2
+	#c0 .Screen/pixel DEO
+
+	( boxes and bg )
+	;bg/grid-dot .Screen/addr DEO2
+	#0000 .Screen/x DEO2
+	#0000 .Screen/y DEO2
+	#20 #20 #03 draw-sprite-rect
+
+	;&level-x LDA2 .Screen/x DEO2
+	;&level-y LDA2 .Screen/y DEO2
+	;&level-w LDA ;&level-h LDA
+	#8a draw-box 
+
+	;zero .Screen/addr DEO2
+	;&level-x LDA2 .Screen/x DEO2
+	;&level-y LDA2 .Screen/y DEO2
+	;&level-w LDA ;&level-h LDA
+	#03 draw-sprite-rect
+
+	;&music-x LDA2 .Screen/x DEO2
+	;&music-y LDA2 .Screen/y DEO2
+	;&music-w LDA ;&music-h LDA
+	#8a draw-box 
+
+	;zero .Screen/addr DEO2
+	;&music-x LDA2 .Screen/x DEO2
+	;&music-y LDA2 .Screen/y DEO2
+	;&music-w LDA ;&music-h LDA
+	#00 draw-sprite-rect
+JMP2r
+
+&on-frame ( -> )
+	( play music )
+	music/on-screen-audio
+
+	( draw text )
+	#42 ;&selected LDA ADD ;&level-color STA
+	#43 ;&selected LDA SUB ;&music-color STA
+
+	;&level-x LDA2 #0008 ADD2 
+	;&level-y LDA2 #0008 ADD2
+	;strings/level [ LIT &level-color 42 ] draw-str
+	;&level-x LDA2 #0040 ADD2 
+	;&level-y LDA2 #0008 ADD2
+	#00 [ LIT &start-level $1 ] ,&level-color LDR draw-num
+
+	;&music-x LDA2 #0008 ADD2 
+	;&music-y LDA2 #0008 ADD2
+	;strings/music [ LIT &music-color 43 ] draw-str
+	;&music-x LDA2 #0050 ADD2 
+	;&music-y LDA2 #0008 ADD2
+	;&music-str #00 [ LIT &music-selection $1 ] #02 MUL ADD2 LDA2 ,&music-color LDR draw-str
+
+	( interaction )
+	#30 button/pressed ?&swap
+	#40 button/pressed ?&dec
+	#80 button/pressed ?&inc
+	#0c button/pressed ?&start
+BRK
+&swap
+	[ LIT &selected $1 ] INC #02 MOD ,&selected STR
+BRK
+&inc
+	,&selected LDR ?&inc-music
+	;&start-level LDA INC #15 MOD ;&start-level STA
+BRK
+&inc-music
+	;&music-selection LDA INC #04 MOD DUP
+	;&music-selection STA
+	.music-player/which STZ
+	music/init
+BRK
+&dec
+	,&selected LDR ?&dec-music
+	;&start-level LDA #14 ADD #15 MOD ;&start-level STA
+BRK
+&dec-music
+	;&music-selection LDA #03 ADD #04 MOD DUP
+	;&music-selection STA
+	.music-player/which STZ
+	music/init
+BRK
+&start
+	;&start-level LDA init-game
+BRK
+	&level-x 0048
+	&level-y 0060
+	&level-w 0e
+	&level-h 03
+	&music-x 0048
+	&music-y 0090
+	&music-w 0e
+	&music-h 03
+	&music-str 
+		=strings/off
+		=strings/a
+		=strings/b
+		=strings/c
+
+@init-game ( level -- )
+	.score/level STZ
 	;on-frame-game .Screen/vector DEO2
-	#00 .score/level STZ
 	#0000 .score/lines STZ2
 	#0000 .score/points STZ2
+	#01 .music-player/drums-off STZ
 	init-well
 	init-level
 	init-pieces
@@ -104,10 +228,11 @@ BRK
 	,&is-paused LDR #01 EOR ,&is-paused STR
 	&no-pause
 
-	music/on-frame
-
 	[ LIT &is-paused $1 ]
 		?&draw
+
+	( play music )
+	music/on-screen-audio
 
 	.ghost clear-piece
 	.cur clear-piece
@@ -282,9 +407,10 @@ BRK
 	;pos/well-y LDA2 #004d ADD2 
 	;strings/game-over #41 draw-str
 
-	#08 button/pressed #00 EQU
+	#0c button/pressed #00 EQU
 		?&done
-	init-game
+	music/init
+	menu
 	&done
 BRK
 
@@ -1051,6 +1177,11 @@ JMP2r
 	&game-over "GAME 20 "OVER $1
 	&pause "PAUSED $1
 	&start "PRESS 20 "START $1
+	&music "MUSIC $1
+	&a 2020 "A $1
+	&b 2020 "B $1
+	&c 2020 "C $1
+	&off "OFF $1
 
 ( sprites )
 
