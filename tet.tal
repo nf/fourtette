@@ -128,7 +128,7 @@ BRK
 	;&level-x LDA2 .Screen/x DEO2
 	;&level-y LDA2 .Screen/y DEO2
 	;&level-w LDA ;&level-h LDA
-	#03 draw-sprite-rect
+	#01 draw-sprite-rect
 
 	;&music-x LDA2 .Screen/x DEO2
 	;&music-y LDA2 .Screen/y DEO2
@@ -139,7 +139,7 @@ BRK
 	;&music-x LDA2 .Screen/x DEO2
 	;&music-y LDA2 .Screen/y DEO2
 	;&music-w LDA ;&music-h LDA
-	#00 draw-sprite-rect
+	#01 draw-sprite-rect
 JMP2r
 
 &on-frame ( -> )
@@ -737,7 +737,7 @@ JMP2r
 	;pos/well-y LDA2 .Screen/y DEO2
 	;pos/well-w LDA
 	;pos/well-h LDA
-	#00 draw-sprite-rect
+	#01 draw-sprite-rect
 
 !draw-well
 
@@ -747,7 +747,7 @@ JMP2r
 	;pos/well-y LDA2 .Screen/y DEO2
 	;pos/well-w LDA
 	;pos/well-h LDA
-	#03 draw-sprite-rect
+	#01 draw-sprite-rect
 	#006a #0080 ;strings/pause #41 
 !draw-str
 
@@ -862,7 +862,7 @@ JMP2r
 	;pos/next-y LDA2 .Screen/y DEO2
 	;pos/next-w LDA
 	;pos/next-h LDA
-	#00 draw-sprite-rect
+	#01 draw-sprite-rect
 
 	;pos/next-x LDA2 #0008 ADD2
 	;pos/next-y LDA2 #0003 ADD2 
@@ -880,7 +880,7 @@ JMP2r
 	;pos/hold-y LDA2 .Screen/y DEO2
 	;pos/hold-w LDA
 	;pos/hold-h LDA
-	#00 draw-sprite-rect
+	#01 draw-sprite-rect
 
 	;pos/hold-x LDA2 #0008 ADD2
 	;pos/hold-y LDA2 #0003 ADD2 
@@ -898,7 +898,7 @@ JMP2r
 	;pos/score-y LDA2 .Screen/y DEO2
 	;pos/score-w LDA
 	;pos/score-h LDA
-	#00 draw-sprite-rect
+	#01 draw-sprite-rect
 
 	;pos/score-x LDA2 #0004 ADD2
 	;pos/score-y LDA2 #0004 ADD2 
@@ -939,7 +939,7 @@ JMP2r
 	#30 draw-box/put
 	( left )
 	.Screen/x DEI2 #00 ;&w LDA #08 ADD SUB2 .Screen/x DEO2
-	.Screen/y DEI2 #00 ;&h LDA #08 ADD SUB2 .Screen/y DEO2
+	.Screen/y DEI2 #00 ;&h LDA #08 SUB SUB2 .Screen/y DEO2
 	;border-chr/edge-ver .Screen/addr DEO2
 	#00 ;&h LDA draw-box/putn
 	( bl )    
